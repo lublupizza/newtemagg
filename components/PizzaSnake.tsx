@@ -17,7 +17,7 @@ const PizzaSnake: React.FC<PizzaSnakeProps> = ({ onGameOver, language, autoStart
   const [level, setLevel] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   
-  // MOBILE OPTIMIZATION: Swipe refs
+  // SWIPE LOGIC
   const touchStartRef = useRef<{x: number, y: number} | null>(null);
 
   const gameRef = useRef({
@@ -45,6 +45,67 @@ const PizzaSnake: React.FC<PizzaSnakeProps> = ({ onGameOver, language, autoStart
   };
 
   useEffect(() => { if (autoStart && gameState === 'start') setGameState('playing'); }, [autoStart]);
+
+  // Native Event Listeners for Swipe (Non-passive to prevent default)
+  useEffect(() => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const handleTouchStart = (e: TouchEvent) => {
+          const touch = e.touches[0];
+          const x = touch.clientX;
+          const y = touch.clientY;
+          
+          // BACK SWIPE PROTECTION:
+          // If touch starts near the left or right edge, consume the event immediately
+          // to prevent iOS from triggering history navigation.
+          if (x < 30 || x > window.innerWidth - 30) {
+              e.preventDefault();
+          }
+
+          touchStartRef.current = { x, y };
+      };
+
+      const handleTouchMove = (e: TouchEvent) => {
+          // Always prevent scrolling while moving finger on canvas
+          e.preventDefault();
+      };
+
+      const handleTouchEnd = (e: TouchEvent) => {
+          if (!touchStartRef.current) return;
+          const endX = e.changedTouches[0].clientX;
+          const endY = e.changedTouches[0].clientY;
+          const diffX = endX - touchStartRef.current.x;
+          const diffY = endY - touchStartRef.current.y;
+          const g = gameRef.current;
+
+          if (Math.abs(diffX) > Math.abs(diffY)) {
+              // Horizontal Swipe
+              if (Math.abs(diffX) > 25) { // Threshold
+                  if (diffX > 0 && g.dir.x === 0) g.nextDir = {x: 1, y: 0};
+                  else if (diffX < 0 && g.dir.x === 0) g.nextDir = {x: -1, y: 0};
+              }
+          } else {
+              // Vertical Swipe
+              if (Math.abs(diffY) > 25) {
+                  if (diffY > 0 && g.dir.y === 0) g.nextDir = {x: 0, y: 1};
+                  else if (diffY < 0 && g.dir.y === 0) g.nextDir = {x: 0, y: -1};
+              }
+          }
+          touchStartRef.current = null;
+      };
+
+      // Use { passive: false } to allow preventDefault()
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd);
+
+      return () => {
+          canvas.removeEventListener('touchstart', handleTouchStart);
+          canvas.removeEventListener('touchmove', handleTouchMove);
+          canvas.removeEventListener('touchend', handleTouchEnd);
+      };
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -204,59 +265,28 @@ const PizzaSnake: React.FC<PizzaSnakeProps> = ({ onGameOver, language, autoStart
     };
   }, [gameState]);
 
-  // MOBILE OPTIMIZATION: Swipe Handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-      if (!touchStartRef.current) return;
-      const endX = e.changedTouches[0].clientX;
-      const endY = e.changedTouches[0].clientY;
-      const diffX = endX - touchStartRef.current.x;
-      const diffY = endY - touchStartRef.current.y;
-      const g = gameRef.current;
-
-      if (Math.abs(diffX) > Math.abs(diffY)) {
-          // Horizontal
-          if (Math.abs(diffX) > 30) { // Threshold
-              if (diffX > 0 && g.dir.x === 0) g.nextDir = {x: 1, y: 0};
-              else if (diffX < 0 && g.dir.x === 0) g.nextDir = {x: -1, y: 0};
-          }
-      } else {
-          // Vertical
-          if (Math.abs(diffY) > 30) {
-              if (diffY > 0 && g.dir.y === 0) g.nextDir = {x: 0, y: 1};
-              else if (diffY < 0 && g.dir.y === 0) g.nextDir = {x: 0, y: -1};
-          }
-      }
-      touchStartRef.current = null;
-  };
-
   return (
-    <div className={`relative bg-black border-4 border-green-500 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,255,0,0.3)] ${isFullscreen ? 'fixed inset-0 z-50' : 'w-full h-full min-h-[500px]'} touch-none`}>
+    <div className={`relative bg-black border-4 border-green-500 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(0,255,0,0.3)] w-full h-full touch-none select-none`}>
        <canvas 
          ref={canvasRef} 
          className="w-full h-full block" 
-         onTouchStart={handleTouchStart}
-         onTouchEnd={handleTouchEnd}
+         // Listeners are attached in useEffect for passive: false support
        />
        
        {/* UI Overlay */}
-       <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none z-10">
-           <div className="flex items-center gap-3">
-               <div className="bg-green-900/20 px-2 py-1 rounded border border-green-500/30 flex items-center gap-2 text-green-400 font-mono font-bold text-sm w-fit">
-                   <Trophy className="w-4 h-4" /> {score}
-               </div>
-               <div className="bg-black/60 border border-green-500/20 backdrop-blur-sm px-3 py-1.5 rounded-md flex items-center gap-2 shadow-[0_0_10px_rgba(0,255,0,0.1)] w-fit opacity-90">
-                   <div className="w-3 h-3 bg-white flex items-center justify-center rounded-[2px]">
-                       <Heart className="w-2 h-2 text-red-600 fill-red-600" />
-                   </div>
-                   <span className="text-[9px] text-green-300 font-mono font-bold tracking-widest uppercase">ЛюблюPizza</span>
-               </div>
+       <div className="absolute top-4 left-4 flex items-center gap-4 pointer-events-none z-10">
+           <div className="bg-green-900/20 px-2 py-1 rounded border border-green-500/30 flex items-center gap-2 text-green-400 font-mono font-bold text-sm w-fit">
+               <Trophy className="w-4 h-4" /> {score}
            </div>
-           <div className="bg-green-900/20 px-2 py-1 rounded border border-green-500/30 text-green-400 font-mono font-bold text-sm">LVL {level}</div>
+           <div className="bg-black/60 border border-green-500/20 backdrop-blur-sm px-3 py-1.5 rounded-md flex items-center gap-2 shadow-[0_0_10px_rgba(0,255,0,0.1)] w-fit opacity-90">
+               <div className="w-3 h-3 bg-white flex items-center justify-center rounded-[2px]">
+                   <Heart className="w-2 h-2 text-red-600 fill-red-600" />
+               </div>
+               <span className="text-[9px] text-green-300 font-mono font-bold tracking-widest uppercase">ЛюблюPizza</span>
+           </div>
        </div>
+
+       <div className="absolute top-4 right-4 bg-green-900/20 px-2 py-1 rounded border border-green-500/30 text-green-400 font-mono font-bold text-sm pointer-events-none z-10">LVL {level}</div>
 
        <div className="absolute bottom-4 left-4 w-32 pointer-events-none">
            <div className="text-green-500 text-[10px] mb-1 font-mono">BONUS PROGRESS</div>
@@ -264,14 +294,6 @@ const PizzaSnake: React.FC<PizzaSnakeProps> = ({ onGameOver, language, autoStart
                <div className="h-full bg-green-500 transition-all duration-300" style={{width: `${bonus}%`}}></div>
            </div>
        </div>
-
-       {/* Fullscreen Toggle */}
-       <button 
-         onClick={() => setIsFullscreen(!isFullscreen)}
-         className="absolute top-4 right-4 p-2 bg-green-900/30 text-green-400 rounded hover:bg-green-900/50 transition-colors z-30"
-       >
-         {isFullscreen ? <Minimize2 className="w-4 h-4"/> : <Maximize2 className="w-4 h-4"/>}
-       </button>
 
        {gameState === 'start' && (
            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-green-500 z-40 animate-in zoom-in">

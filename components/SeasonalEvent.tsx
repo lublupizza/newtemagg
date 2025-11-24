@@ -334,7 +334,7 @@ const FlyingSanta = React.memo(() => {
 });
 
 const Snowfall = React.memo(() => {
-    const count = 300;
+    const count = 200; // MOBILE OPTIMIZATION: Reduced count
     const mesh = useRef<THREE.InstancedMesh>(null);
     const dummy = useMemo(() => new THREE.Object3D(), []);
     const particles = useMemo(() => Array.from({ length: count }, () => ({
@@ -398,14 +398,20 @@ const TreeGarland = React.memo(({ typeId }: { typeId: string | null }) => {
     )
 });
 
+// MOBILE OPTIMIZATION: Use Ref for ghost object to prevent react re-renders on pointer move
 const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, topperId }: any) => {
     const assets = useAssets();
-    const [ghostPos, setGhostPos] = useState<THREE.Vector3 | null>(null);
-    const [ghostRot, setGhostRot] = useState<THREE.Quaternion>(new THREE.Quaternion());
+    const ghostRef = useRef<THREE.Group>(null);
+    const currentGhostData = useRef<{pos: THREE.Vector3, rot: THREE.Quaternion} | null>(null);
 
     const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
-        if (!selectedDecor) return;
-        e.stopPropagation();
+        if (!selectedDecor) {
+            if (ghostRef.current) ghostRef.current.visible = false;
+            currentGhostData.current = null;
+            return;
+        }
+        e.stopPropagation(); // Important
+        
         const treeTopY = 8.0;
         const treeBottomY = 1.0;
         const maxRadius = 3.2;
@@ -423,20 +429,30 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
         dummy.lookAt(x, 0, z); 
         dummy.rotateX(0.2); 
         
-        setGhostPos(pos);
-        setGhostRot(dummy.quaternion.clone());
+        if (ghostRef.current) {
+            ghostRef.current.visible = true;
+            ghostRef.current.position.copy(pos);
+            ghostRef.current.quaternion.copy(dummy.quaternion);
+        }
+        currentGhostData.current = { pos, rot: dummy.quaternion.clone() };
     };
 
     const handleClick = (e: ThreeEvent<MouseEvent>) => {
-        if (!selectedDecor || !ghostPos) return;
+        if (!selectedDecor || !currentGhostData.current) return;
         e.stopPropagation();
-        onPlace(ghostPos, ghostRot);
+        onPlace(currentGhostData.current.pos, currentGhostData.current.rot);
     };
+
+    const handlePointerOut = () => {
+        if (ghostRef.current) ghostRef.current.visible = false;
+        currentGhostData.current = null;
+    }
 
     return (
         <group>
-            <mesh visible={false} position={[0, 4.5, 0]} onPointerMove={handlePointerMove} onClick={handleClick} onPointerOut={() => setGhostPos(null)}>
-                <cylinderGeometry args={[0, 3.5, 9, 16]} />
+            {/* Invisible Collision Mesh for Performance */}
+            <mesh visible={false} position={[0, 4.5, 0]} onPointerMove={handlePointerMove} onClick={handleClick} onPointerOut={handlePointerOut}>
+                <cylinderGeometry args={[0, 3.5, 9, 12]} />
                 <meshBasicMaterial color="red" />
             </mesh>
 
@@ -465,9 +481,10 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
                 return <group key={item.id} position={item.position} quaternion={item.quaternion}><DetailedOrnament type={def.type} color={def.color} assets={assets} /></group>
             })}
 
-            {ghostPos && selectedDecor && (
-                <group position={ghostPos} quaternion={ghostRot}><mesh><sphereGeometry args={[0.3]} /><meshBasicMaterial color="white" opacity={0.5} transparent /></mesh></group>
-            )}
+            {/* Ghost Render via Ref */}
+            <group ref={ghostRef} visible={false}>
+                <mesh><sphereGeometry args={[0.3]} /><meshBasicMaterial color="white" opacity={0.5} transparent /></mesh>
+            </group>
         </group>
     );
 });
@@ -501,7 +518,10 @@ const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland
             <OrbitControls enableZoom={true} minPolarAngle={Math.PI/4} maxPolarAngle={Math.PI/2 - 0.1} minDistance={8} maxDistance={25} />
         </Canvas>
     </div>
-));
+), (prev, next) => {
+    // Only re-render canvas if 3D props change, ignore simple UI state like "activeTab"
+    return prev.garland === next.garland && prev.topper === next.topper && prev.placedItems === next.placedItems && prev.selectedDecor === next.selectedDecor;
+});
 
 const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -511,6 +531,27 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const [placedItems, setPlacedItems] = useState<any[]>([]);
     const [garland, setGarland] = useState<string | null>(null);
     const [topper, setTopper] = useState<string | null>(null);
+
+    // MOBILE OPTIMIZATION: Lock Scroll
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        document.body.style.touchAction = 'none';
+        
+        const preventDefault = (e: TouchEvent) => {
+            // Allow multi-touch gestures if needed, but mostly block
+            if (e.touches.length > 1) return;
+            e.preventDefault();
+        };
+        
+        // Passive false required to preventDefault
+        window.addEventListener('touchmove', preventDefault, { passive: false });
+        
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.touchAction = '';
+            window.removeEventListener('touchmove', preventDefault);
+        };
+    }, []);
 
     const TABS = {
         decor: { ru: 'ИГРУШКИ', en: 'DECOR' },
@@ -595,8 +636,8 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     };
 
     return (
-        <div className="w-full min-h-screen bg-[#0f172a] relative overflow-hidden">
-            {/* 3D SCENE - MEMOIZED TO PREVENT RE-RENDERS ON UI CHANGE */}
+        <div className="w-full min-h-screen bg-[#0f172a] relative overflow-hidden touch-none">
+            {/* 3D SCENE - MEMOIZED */}
             <SeasonalScene 
                 selectedDecor={selectedDecor}
                 placedItems={placedItems}
@@ -606,17 +647,28 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
                 setContainerRef={(el: HTMLDivElement) => containerRef.current = el}
             />
             
-            <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-4">
+            {/* UI OVERLAY - SAFE AREA AWARE */}
+            <div 
+                className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-4"
+                style={{
+                    paddingTop: 'max(1rem, env(safe-area-inset-top))',
+                    paddingBottom: 'max(1rem, env(safe-area-inset-bottom))'
+                }}
+            >
                 <div className="pointer-events-auto flex flex-col items-start max-w-7xl mx-auto w-full gap-4">
-                    <div className="bg-gradient-to-r from-indigo-600/90 to-purple-600/90 backdrop-blur-md p-3 rounded-xl border border-white/20 shadow-lg w-fit animate-in slide-in-from-left-10 duration-700">
-                        <div className="flex items-center gap-2 mb-0.5">
-                            <Snowflake className="w-3 h-3 text-cyan-300 animate-spin-slow" />
-                            <div className="text-[10px] text-indigo-100 font-bold uppercase tracking-widest">
-                                Волшебный лес в ЛюблюPIZZA
+                    {/* Title Badge */}
+                    <div className="w-fit">
+                        <div className="bg-gradient-to-r from-indigo-900/80 to-purple-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_0_30px_rgba(99,102,241,0.3)] flex flex-col gap-1 animate-in slide-in-from-top-4 duration-700">
+                            <div className="flex items-center gap-2 text-cyan-300 border-b border-white/10 pb-2 mb-1">
+                                <Snowflake className="w-4 h-4 animate-spin-slow" />
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Сезон 2026</span>
                             </div>
-                        </div>
-                        <div className="text-white font-bold text-sm drop-shadow-md">
-                            Укрась свою елочку
+                            <h2 className="text-xl md:text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-200 to-indigo-200 drop-shadow-sm leading-none">
+                                Волшебный лес в ЛюблюPIZZA
+                            </h2>
+                            <p className="text-xs text-indigo-200/70 font-mono uppercase tracking-wider">
+                                Укрась свою елочку
+                            </p>
                         </div>
                     </div>
 
@@ -625,34 +677,45 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
                             <ArrowLeft />
                         </button>
 
-                        <button onClick={handleTakePhoto} disabled={isProcessingPhoto} className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 px-6 py-2 rounded-full text-white font-bold shadow-lg hover:scale-105 transition-all">
-                            {isProcessingPhoto ? <Loader2 className="animate-spin" /> : <Camera />} 
+                        <button onClick={handleTakePhoto} disabled={isProcessingPhoto} className="flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 px-4 md:px-6 py-2 rounded-full text-white font-bold shadow-lg hover:scale-105 transition-all text-xs md:text-sm">
+                            {isProcessingPhoto ? <Loader2 className="animate-spin w-4 h-4" /> : <Camera className="w-4 h-4" />} 
                             {language === 'ru' ? 'Фото на память' : 'Vintage Photo'}
                         </button>
                     </div>
                 </div>
                 
-                <div className="pointer-events-auto self-center w-full max-w-3xl bg-black/60 backdrop-blur-xl rounded-3xl p-4 border border-white/10">
+                <div className="pointer-events-auto self-center w-full max-w-3xl bg-black/60 backdrop-blur-xl rounded-3xl p-4 border border-white/10 mb-4">
                     <div className="flex justify-center gap-2 mb-4">
                         {['decor', 'lights', 'top'].map((tab) => (
-                            <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-4 py-2 rounded-full text-xs font-bold uppercase ${activeTab === tab ? 'bg-pink-600 text-white' : 'bg-gray-800 text-gray-400'}`}>
+                            <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-3 py-2 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold uppercase transition-all ${activeTab === tab ? 'bg-pink-600 text-white' : 'bg-gray-800 text-gray-400'}`}>
                                 {TABS[tab as keyof typeof TABS][language]}
                             </button>
                         ))}
                     </div>
-                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                    <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar touch-pan-x">
                         {activeTab === 'decor' && ORNAMENTS.map(i => (
-                            <button key={i.id} onClick={() => setSelectedDecor(selectedDecor === i.id ? null : i.id)} className={`min-w-[70px] h-[70px] rounded-xl border-2 flex flex-col items-center justify-center transition-all ${selectedDecor === i.id ? 'border-pink-500 bg-pink-500/20 scale-105' : 'border-white/10 hover:bg-white/5'}`}>
-                                <div className="w-6 h-6 rounded-full shadow-lg" style={{ backgroundColor: i.color }}></div><span className="text-[9px] text-gray-300 mt-1 text-center leading-tight px-1">{i.name[language]}</span>
+                            <button key={i.id} onClick={() => setSelectedDecor(selectedDecor === i.id ? null : i.id)} className={`min-w-[60px] h-[60px] md:min-w-[70px] md:h-[70px] rounded-xl border-2 flex flex-col items-center justify-center transition-all flex-shrink-0 ${selectedDecor === i.id ? 'border-pink-500 bg-pink-500/20 scale-105' : 'border-white/10 hover:bg-white/5'}`}>
+                                <div className="w-5 h-5 md:w-6 md:h-6 rounded-full shadow-lg" style={{ backgroundColor: i.color }}></div>
+                                <span className="text-[8px] md:text-[9px] text-gray-300 mt-1 text-center leading-tight px-1 truncate w-full">{i.name[language]}</span>
                             </button>
                         ))}
                         {activeTab === 'lights' && GARLANDS.map(g => (
-                            <button key={g.id} onClick={() => setGarland(garland === g.id ? null : g.id)} className={`min-w-[70px] h-[70px] rounded-xl border-2 flex flex-col items-center justify-center transition-all ${garland === g.id ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 hover:bg-white/5'}`}><Zap className="text-yellow-400" /><span className="text-[9px] text-gray-300 mt-1">{g.name[language]}</span></button>
+                            <button key={g.id} onClick={() => setGarland(garland === g.id ? null : g.id)} className={`min-w-[60px] h-[60px] md:min-w-[70px] md:h-[70px] rounded-xl border-2 flex flex-col items-center justify-center transition-all flex-shrink-0 ${garland === g.id ? 'border-blue-500 bg-blue-500/20' : 'border-white/10 hover:bg-white/5'}`}>
+                                <Zap className="text-yellow-400 w-5 h-5" />
+                                <span className="text-[8px] md:text-[9px] text-gray-300 mt-1 truncate w-full text-center">{g.name[language]}</span>
+                            </button>
                         ))}
                         {activeTab === 'top' && TOPPERS.map(t => (
-                            <button key={t.id} onClick={() => setTopper(topper === t.id ? null : t.id)} className={`min-w-[70px] h-[70px] rounded-xl border-2 flex flex-col items-center justify-center transition-all ${topper === t.id ? 'border-yellow-500 bg-yellow-500/20' : 'border-white/10 hover:bg-white/5'}`}><Star className="text-yellow-400" /><span className="text-[9px] text-gray-300 mt-1">{t.name[language]}</span></button>
+                            <button key={t.id} onClick={() => setTopper(topper === t.id ? null : t.id)} className={`min-w-[60px] h-[60px] md:min-w-[70px] md:h-[70px] rounded-xl border-2 flex flex-col items-center justify-center transition-all flex-shrink-0 ${topper === t.id ? 'border-yellow-500 bg-yellow-500/20' : 'border-white/10 hover:bg-white/5'}`}>
+                                <Star className="text-yellow-400 w-5 h-5" />
+                                <span className="text-[8px] md:text-[9px] text-gray-300 mt-1 truncate w-full text-center">{t.name[language]}</span>
+                            </button>
                         ))}
-                        {activeTab === 'decor' && placedItems.length > 0 && <button onClick={() => setPlacedItems([])} className="min-w-[70px] h-[70px] rounded-xl border border-red-500 text-red-500 flex items-center justify-center ml-auto hover:bg-red-900/20 transition-colors"><Trash2 /></button>}
+                        {activeTab === 'decor' && placedItems.length > 0 && (
+                            <button onClick={() => setPlacedItems([])} className="min-w-[60px] h-[60px] md:min-w-[70px] md:h-[70px] rounded-xl border border-red-500 text-red-500 flex items-center justify-center ml-auto hover:bg-red-900/20 transition-colors flex-shrink-0">
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

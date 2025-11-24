@@ -26,6 +26,9 @@ const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, user, langua
   const [secretQuote, setSecretQuote] = useState('');
   const [secretInput, setSecretInput] = useState('');
   const [secretFeedback, setSecretFeedback] = useState('');
+  
+  // MOBILE FIX: Toggle state for games dropdown
+  const [isGamesOpen, setIsGamesOpen] = useState(false);
 
   const handleSecretClick = () => {
     if (!isSecretOpen) {
@@ -90,9 +93,13 @@ const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, user, langua
           {/* Desktop Nav */}
           <nav className="hidden md:flex space-x-2 lg:space-x-6">
             
-            {/* GAMES DROPDOWN */}
-            <div className="relative group">
+            {/* GAMES DROPDOWN - FIXED FOR TOUCH */}
+            <div 
+              className="relative group"
+              onMouseLeave={() => setIsGamesOpen(false)} // Close on mouse leave for desktop
+            >
               <button
+                onClick={() => setIsGamesOpen(!isGamesOpen)} // Toggle on click for mobile/tablet
                 className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-all ${
                   [AppView.GAMES, AppView.QUIZ, AppView.WHEEL, AppView.PUZZLE, AppView.SCRATCH].includes(currentView)
                     ? 'bg-purple-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.6)] border border-purple-400'
@@ -101,14 +108,14 @@ const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, user, langua
               >
                 <Gamepad2 className="w-4 h-4 mr-2 text-fuchsia-400 drop-shadow-[0_0_8px_rgba(192,38,211,0.8)]" />
                 {labels.games}
-                <ChevronDown className="w-3 h-3 ml-1 group-hover:rotate-180 transition-transform" />
+                <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${isGamesOpen ? 'rotate-180' : 'group-hover:rotate-180'}`} />
               </button>
 
               {/* Dropdown Menu */}
-              <div className="absolute left-0 top-full pt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform group-hover:translate-y-0 translate-y-2 z-[100]">
+              <div className={`absolute left-0 top-full pt-2 w-64 transition-all duration-200 transform z-[100] ${isGamesOpen ? 'opacity-100 visible translate-y-0' : 'opacity-0 invisible translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0'}`}>
                 <div className="bg-gray-900 border border-purple-500/50 rounded-xl shadow-[0_0_30px_rgba(168,85,247,0.3)] overflow-hidden">
                    <button 
-                      onClick={() => onChangeView(AppView.GAMES)}
+                      onClick={() => { onChangeView(AppView.GAMES); setIsGamesOpen(false); }}
                       className="w-full flex items-center px-4 py-3 hover:bg-gray-800 transition-colors text-left group/item border-b border-gray-800"
                    >
                       <div className="p-2 bg-pink-500/20 rounded-lg mr-3 group-hover/item:bg-pink-500 transition-colors shadow-[0_0_10px_rgba(236,72,153,0.3)]">
@@ -121,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, user, langua
                    </button>
                    
                    <button 
-                      onClick={() => onChangeView(AppView.QUIZ)}
+                      onClick={() => { onChangeView(AppView.QUIZ); setIsGamesOpen(false); }}
                       className="w-full flex items-center px-4 py-3 hover:bg-gray-800 transition-colors text-left group/item border-b border-gray-800"
                    >
                       <div className="p-2 bg-purple-500/20 rounded-lg mr-3 group-hover/item:bg-purple-500 transition-colors shadow-[0_0_10px_rgba(168,85,247,0.3)]">
@@ -134,7 +141,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, user, langua
                    </button>
 
                    <button 
-                      onClick={() => onChangeView(AppView.PUZZLE)}
+                      onClick={() => { onChangeView(AppView.PUZZLE); setIsGamesOpen(false); }}
                       className="w-full flex items-center px-4 py-3 hover:bg-gray-800 transition-colors text-left group/item border-b border-gray-800"
                    >
                       <div className="p-2 bg-blue-500/20 rounded-lg mr-3 group-hover/item:bg-blue-500 transition-colors shadow-[0_0_10px_rgba(59,130,246,0.3)]">
@@ -147,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, user, langua
                    </button>
                    
                    <button 
-                      onClick={() => onChangeView(AppView.SCRATCH)}
+                      onClick={() => { onChangeView(AppView.SCRATCH); setIsGamesOpen(false); }}
                       className="w-full flex items-center px-4 py-3 hover:bg-gray-800 transition-colors text-left group/item border-b border-gray-800"
                    >
                       <div className="p-2 bg-green-500/20 rounded-lg mr-3 group-hover/item:bg-green-500 transition-colors shadow-[0_0_10px_rgba(34,197,94,0.3)]">
@@ -160,7 +167,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onChangeView, user, langua
                    </button>
 
                    <button 
-                      onClick={() => onChangeView(AppView.WHEEL)}
+                      onClick={() => { onChangeView(AppView.WHEEL); setIsGamesOpen(false); }}
                       className="w-full flex items-center px-4 py-3 hover:bg-gray-800 transition-colors text-left group/item"
                    >
                       <div className="p-2 bg-yellow-500/20 rounded-lg mr-3 group-hover/item:bg-yellow-500 transition-colors shadow-[0_0_10px_rgba(234,179,8,0.3)]">

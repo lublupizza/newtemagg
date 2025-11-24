@@ -1,17 +1,17 @@
-// Gemini отключён для стабильной прод-сборки без @google/genai.
-// Позже можно вернуть оригинал.
 
+// Stubbed service for production build without Gemini dependency
+
+// 1. Generate Text (Descriptions, Marketing copy)
 export const generateMarketingText = async (prompt: string): Promise<string> => {
-  console.warn("Gemini disabled. Prompt:", prompt);
-  return "AI временно отключен. Скоро вернёмся с новыми фишками! 🍕";
+  return "AI временно отключен для оптимизации. Следите за обновлениями!";
 };
 
-export const generatePizzaImage = async (): Promise<string | null> => {
-  console.warn("Gemini image generation disabled.");
+// 2. Generate Image (Imagen 4.0)
+export const generatePizzaImage = async (prompt: string, aspectRatio: string = '1:1'): Promise<string | null> => {
   return null;
 };
 
-export const editPizzaImage = async (): Promise<string | null> => {
-  console.warn("Gemini image editing disabled.");
+// 3. Edit Image (Gemini 2.5 Flash Image - Nano Banana)
+export const editPizzaImage = async (base64Image: string, prompt: string): Promise<string | null> => {
   return null;
 };

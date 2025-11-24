@@ -80,7 +80,7 @@ const PodiumPlayer = React.memo(({ user, place, t, themeColor }: { user: RankUse
     const glow = isFirst ? `shadow-[0_0_60px_${themeColor === 'gamer' ? 'rgba(236,72,153,0.4)' : 'rgba(234,179,8,0.3)'}]` : '';
 
     return (
-        <div className={`relative flex flex-col items-center justify-end group z-10 ${place === 1 ? 'order-2 -mt-12 z-20' : place === 2 ? 'order-1' : 'order-3'}`}>
+        <div className={`relative flex flex-col items-center justify-end group z-10 min-w-[120px] ${place === 1 ? 'order-2 -mt-12 z-20' : place === 2 ? 'order-1' : 'order-3'}`}>
             <div className={`relative mb-4 animate-[float_3s_ease-in-out_infinite] ${delay}`}>
                 <div className={`w-20 h-20 md:w-24 md:h-24 rounded-2xl rotate-45 border-4 ${borderColor} ${user.avatarColor} shadow-2xl flex items-center justify-center overflow-hidden transform transition-transform group-hover:scale-110 group-hover:rotate-[50deg]`}>
                     <div className="-rotate-45 flex items-center justify-center w-full h-full">
@@ -88,7 +88,7 @@ const PodiumPlayer = React.memo(({ user, place, t, themeColor }: { user: RankUse
                     </div>
                 </div>
                 <div className="absolute -bottom-6 left-1/2 -translate-x-1/2">
-                    <RankBadge rank={place} className="w-16 h-16 drop-shadow-lg" />
+                    <RankBadge rank={place} className={place === 1 ? "w-24 h-24 drop-shadow-[0_0_15px_rgba(255,215,0,0.6)]" : "w-20 h-20"} />
                 </div>
                 {isFirst && <Crown className="absolute -top-10 left-1/2 -translate-x-1/2 w-12 h-12 text-yellow-400 fill-yellow-400 animate-bounce drop-shadow-[0_0_15px_rgba(234,179,8,0.8)]" />}
             </div>
@@ -143,7 +143,8 @@ const GlobalRankings: React.FC<GlobalRankingsProps> = ({ language }) => {
   }, [activeTab, searchTerm]);
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-white overflow-hidden pb-20 relative">
+    // MOBILE FIX: removed overflow-hidden, changed to overflow-x-hidden to allow vertical scrolling on mobile
+    <div className="min-h-screen bg-[#0B0F19] text-white overflow-x-hidden pb-20 relative">
       
       {/* DYNAMIC AMBIENT BACKGROUNDS */}
       <div className="fixed inset-0 pointer-events-none transition-colors duration-1000">
@@ -201,9 +202,10 @@ const GlobalRankings: React.FC<GlobalRankingsProps> = ({ language }) => {
             </div>
         </div>
 
-        <div className="relative w-full max-w-4xl mx-auto mb-12 min-h-[400px] flex justify-center items-end px-4 pb-10">
+        {/* MOBILE FIX: Added overflow-x-auto to allow horizontal scrolling of the podium if it overflows on small screens */}
+        <div className="relative w-full max-w-4xl mx-auto mb-12 min-h-[400px] flex justify-center items-end px-4 pb-10 overflow-x-auto custom-scrollbar">
             <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-[100px] blur-[60px] rounded-[100%] pointer-events-none transition-colors duration-700 ${activeTab === 'gamer' ? 'bg-pink-600/30' : activeTab === 'collector' ? 'bg-amber-500/30' : 'bg-purple-600/20'}`}></div>
-            <div className="flex items-end justify-center gap-2 md:gap-6 w-full">
+            <div className="flex items-end justify-center gap-2 md:gap-6 w-full min-w-[350px]">
                 {top3[1] && <PodiumPlayer user={top3[1]} place={2} t={t} themeColor={activeTab} />}
                 {top3[0] && <PodiumPlayer user={top3[0]} place={1} t={t} themeColor={activeTab} />}
                 {top3[2] && <PodiumPlayer user={top3[2]} place={3} t={t} themeColor={activeTab} />}

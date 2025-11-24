@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Trophy, Gamepad2, PlayCircle, ChefHat, Grid3X3, ArrowUpCircle, Info, Keyboard, MousePointer, Hand, Rocket, Box, Flag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Trophy, Gamepad2, PlayCircle, ChefHat, Grid3X3, ArrowUpCircle, Info, Keyboard, MousePointer, Hand, Rocket, Box, Flag, X, BrainCircuit, Disc, Puzzle, Ticket } from 'lucide-react';
 import { Language, GamesConfig, GameId } from '../types';
 import PizzaRunner from './PizzaRunner';
 import PizzaSnake from './PizzaSnake';
@@ -8,6 +8,10 @@ import PizzaStacker from './PizzaStacker';
 import PizzaKitchen from './PizzaKitchen';
 import PizzaCheckers from './PizzaCheckers';
 import PizzaJump from './PizzaJump';
+import QuizGame from './QuizGame';
+import WheelFortune from './WheelFortune';
+import PuzzleGame from './PuzzleGame';
+import ScratchGame from './ScratchGame';
 import DisabledGameScreen from './DisabledGameScreen';
 
 interface GameZoneProps {
@@ -109,6 +113,42 @@ const GAMES_CONFIG: Record<string, any> = {
     controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } }, // MOBILE OPTIMIZATION
     icon: <Flag className="w-12 h-12 text-blue-500" />,
     color: 'border-blue-500 shadow-blue-500/20'
+  },
+  quiz: {
+    id: 'quiz',
+    title: { ru: 'ВИКТОРИНА', en: 'CYBER TRIVIA' },
+    desc: { ru: 'Проверь свои знания о пицце и истории.', en: 'Test your knowledge about pizza and history.' },
+    objective: { ru: 'Отвечай правильно и быстро, чтобы заработать максимум очков.', en: 'Answer correctly and quickly to earn max points.' },
+    controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } },
+    icon: <BrainCircuit className="w-12 h-12 text-purple-500" />,
+    color: 'border-purple-500 shadow-purple-500/20'
+  },
+  wheel: {
+    id: 'wheel',
+    title: { ru: 'КОЛЕСО ФОРТУНЫ', en: 'WHEEL OF FORTUNE' },
+    desc: { ru: 'Испытай удачу и выиграй призы.', en: 'Test your luck and win prizes.' },
+    objective: { ru: 'Крути колесо и получай бонусы, скидки или очки.', en: 'Spin the wheel to get bonuses, discounts or points.' },
+    controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } },
+    icon: <Disc className="w-12 h-12 text-yellow-500" />,
+    color: 'border-yellow-500 shadow-yellow-500/20'
+  },
+  puzzle: {
+    id: 'puzzle',
+    title: { ru: 'ПАЗЛЫ', en: 'PUZZLE' },
+    desc: { ru: 'Собери картинку из кусочков.', en: 'Assemble the picture from pieces.' },
+    objective: { ru: 'Меняй плитки местами, чтобы восстановить изображение.', en: 'Swap tiles to reconstruct the image.' },
+    controls: { type: 'mouse', label: { ru: 'Тап / Свап', en: 'Tap / Swap' } },
+    icon: <Puzzle className="w-12 h-12 text-blue-400" />,
+    color: 'border-blue-400 shadow-blue-400/20'
+  },
+  scratch: {
+    id: 'scratch',
+    title: { ru: 'СЧАСТЛИВАЯ КАРТА', en: 'LUCKY CARD' },
+    desc: { ru: 'Сотри слой и найди приз.', en: 'Scratch the layer and find a prize.' },
+    objective: { ru: 'Води пальцем по карте, чтобы стереть защитный слой.', en: 'Move your finger over the card to scratch off the layer.' },
+    controls: { type: 'mouse', label: { ru: 'Свайп', en: 'Swipe' } },
+    icon: <Ticket className="w-12 h-12 text-green-500" />,
+    color: 'border-green-500 shadow-green-500/20'
   }
 };
 
@@ -194,6 +234,31 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   };
 
   const isGameEnabled = gamesStatus ? gamesStatus[selectedGame] : true;
+  const isPlaying = !showIntro && isGameEnabled;
+
+  // FULLSCREEN LOCK EFFECT
+  useEffect(() => {
+    if (isPlaying) {
+      // Disable scroll and gestures
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
+      
+      const preventDefault = (e: TouchEvent) => {
+          // Allow multi-touch gestures if needed for game, but prevent browser nav
+          if (e.touches.length > 1) return; 
+          e.preventDefault();
+      };
+
+      // Aggressive listener to prevent scroll/swipe nav on mobile
+      window.addEventListener('touchmove', preventDefault, { passive: false });
+
+      return () => {
+        document.body.style.overflow = '';
+        document.documentElement.style.overscrollBehavior = '';
+        window.removeEventListener('touchmove', preventDefault);
+      };
+    }
+  }, [isPlaying]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -211,7 +276,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
       </div>
 
       {/* Game Selector */}
-      <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
+      <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x touch-pan-x">
          {Object.entries(GAMES_CONFIG).map(([key, config]) => (
              <button 
                key={key}
@@ -223,39 +288,57 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
                 </div>
                 <div className="text-left overflow-hidden">
                     <div className={`font-black italic truncate ${selectedGame === key ? 'text-white' : 'text-gray-400'}`}>{config.title.en}</div>
-                    <div className="text-xs text-gray-500">Arcade</div>
+                    <div className="text-xs text-gray-500">{key === 'quiz' || key === 'wheel' ? 'Bonus' : 'Arcade'}</div>
                 </div>
              </button>
          ))}
       </div>
 
-      {/* The Main Game Container - MOBILE OPTIMIZATION: touch-action: none, full width */}
-      <div className="relative w-full h-[80vh] max-h-[600px] rounded-3xl overflow-hidden border border-gray-800 bg-black touch-none">
+      {/* The Main Game Container */}
+      <div className={`relative transition-all duration-300 ${isPlaying ? 'fixed inset-0 z-[9999] w-screen h-[100dvh] bg-black' : 'w-full h-[80vh] max-h-[600px] rounded-3xl border border-gray-800 bg-black'}`}>
          
-         {!isGameEnabled && (
-             <DisabledGameScreen title={GAMES_CONFIG[selectedGame].title[language]} language={language} />
-         )}
+         {/* GAME RENDER */}
+         <div className="w-full h-full overflow-hidden touch-none select-none" style={{ paddingTop: isPlaying ? 'env(safe-area-inset-top)' : 0, paddingBottom: isPlaying ? 'env(safe-area-inset-bottom)' : 0 }}>
+             {!isGameEnabled && (
+                 <DisabledGameScreen title={GAMES_CONFIG[selectedGame].title[language]} language={language} />
+             )}
 
-         {/* Only Render if Enabled */}
-         {!showIntro && isGameEnabled && (
-             <>
-                {selectedGame === 'runner' && <PizzaRunner onGameOver={handleGameOver} language={language} isActive={true} autoStart={true} />}
-                {selectedGame === 'jump' && <PizzaJump onGameOver={handleGameOver} language={language} autoStart={true} />}
-                {selectedGame === 'snake' && <PizzaSnake onGameOver={handleGameOver} language={language} autoStart={true} />}
-                {selectedGame === 'stacker' && <PizzaStacker onGameOver={handleGameOver} language={language} autoStart={true} />}
-                {selectedGame === 'kitchen' && <PizzaKitchen onGameOver={handleGameOver} language={language} autoStart={true} />}
-                {selectedGame === 'checkers' && <PizzaCheckers onGameOver={handleGameOver} language={language} autoStart={true} />}
-             </>
-         )}
+             {/* Active Game */}
+             {isPlaying && (
+                 <>
+                    {/* Close Button for Fullscreen Mode */}
+                    <button 
+                        onClick={() => setShowIntro(true)}
+                        className="absolute top-4 right-4 z-50 p-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-red-500/80 transition-colors border border-white/20"
+                        style={{ marginTop: isPlaying ? 'env(safe-area-inset-top)' : 0 }}
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
 
-         {/* INTRO OVERLAY - Only if enabled */}
-         {showIntro && isGameEnabled && (
-             <GameIntroCard 
-                config={GAMES_CONFIG[selectedGame]} 
-                language={language} 
-                onPlay={() => setShowIntro(false)} 
-             />
-         )}
+                    {selectedGame === 'runner' && <PizzaRunner onGameOver={handleGameOver} language={language} isActive={true} autoStart={true} />}
+                    {selectedGame === 'jump' && <PizzaJump onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'snake' && <PizzaSnake onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'stacker' && <PizzaStacker onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'kitchen' && <PizzaKitchen onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'checkers' && <PizzaCheckers onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    
+                    {/* New Games Integrated */}
+                    {selectedGame === 'quiz' && <QuizGame onComplete={handleGameOver} language={language} />}
+                    {selectedGame === 'wheel' && <WheelFortune onWin={(p, v) => handleGameOver(v > 0 ? v : 0)} language={language} />}
+                    {selectedGame === 'puzzle' && <PuzzleGame onComplete={handleGameOver} language={language} />}
+                    {selectedGame === 'scratch' && <ScratchGame onWin={(p) => handleGameOver(0)} language={language} />}
+                 </>
+             )}
+
+             {/* INTRO OVERLAY (Not Fullscreen yet, contained) */}
+             {showIntro && isGameEnabled && (
+                 <GameIntroCard 
+                    config={GAMES_CONFIG[selectedGame]} 
+                    language={language} 
+                    onPlay={() => setShowIntro(false)} 
+                 />
+             )}
+         </div>
       </div>
 
       {/* Footer */}
