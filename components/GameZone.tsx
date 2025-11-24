@@ -216,6 +216,15 @@ const GameIntroCard = ({ config, language, onPlay }: { config: any, language: La
 const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatus }) => {
   const [selectedGame, setSelectedGame] = useState<GameType>('runner');
   const [showIntro, setShowIntro] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 1. Detect Mobile Device
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 768px)').matches);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleSelectGame = (game: GameType) => {
       if (selectedGame !== game) {
@@ -235,11 +244,14 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
 
   const isGameEnabled = gamesStatus ? gamesStatus[selectedGame] : true;
   const isPlaying = !showIntro && isGameEnabled;
+  
+  // Fullscreen is only active when playing AND on mobile
+  const fullscreenActive = isPlaying && isMobile;
 
-  // FULLSCREEN LOCK EFFECT
+  // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
-    if (isPlaying) {
-      // Disable scroll and gestures
+    if (fullscreenActive) {
+      // Disable scroll and gestures for mobile fullscreen
       document.body.style.overflow = 'hidden';
       document.documentElement.style.overscrollBehavior = 'none';
       
@@ -258,7 +270,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
         window.removeEventListener('touchmove', preventDefault);
       };
     }
-  }, [isPlaying]);
+  }, [fullscreenActive]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -294,11 +306,25 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
          ))}
       </div>
 
-      {/* The Main Game Container */}
-      <div className={`relative transition-all duration-300 ${isPlaying ? 'fixed inset-0 z-[9999] w-screen h-[100dvh] bg-black' : 'w-full h-[80vh] max-h-[600px] rounded-3xl border border-gray-800 bg-black'}`}>
-         
-         {/* GAME RENDER */}
-         <div className="w-full h-full overflow-hidden touch-none select-none" style={{ paddingTop: isPlaying ? 'env(safe-area-inset-top)' : 0, paddingBottom: isPlaying ? 'env(safe-area-inset-bottom)' : 0 }}>
+      {/* 3. Dual Mode Container Logic */}
+      <div 
+        className={
+            fullscreenActive
+            ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center" // Mobile Fullscreen
+            : "relative w-full h-[80vh] max-h-[650px] rounded-3xl border border-gray-800 bg-black z-10" // Desktop Card
+        }
+      >
+         {/* Content Wrapper / Stage */}
+         <div 
+            className={`
+                relative overflow-hidden touch-none select-none w-full h-full
+                ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''} 
+            `}
+            style={{ 
+                paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0, 
+                paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0 
+            }}
+         >
              {!isGameEnabled && (
                  <DisabledGameScreen title={GAMES_CONFIG[selectedGame].title[language]} language={language} />
              )}
@@ -306,11 +332,11 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
              {/* Active Game */}
              {isPlaying && (
                  <>
-                    {/* Close Button for Fullscreen Mode */}
+                    {/* Close Button - Always Visible */}
                     <button 
                         onClick={() => setShowIntro(true)}
                         className="absolute top-4 right-4 z-50 p-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-red-500/80 transition-colors border border-white/20"
-                        style={{ marginTop: isPlaying ? 'env(safe-area-inset-top)' : 0 }}
+                        style={{ marginTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0 }}
                     >
                         <X className="w-6 h-6" />
                     </button>
@@ -322,7 +348,6 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
                     {selectedGame === 'kitchen' && <PizzaKitchen onGameOver={handleGameOver} language={language} autoStart={true} />}
                     {selectedGame === 'checkers' && <PizzaCheckers onGameOver={handleGameOver} language={language} autoStart={true} />}
                     
-                    {/* New Games Integrated */}
                     {selectedGame === 'quiz' && <QuizGame onComplete={handleGameOver} language={language} />}
                     {selectedGame === 'wheel' && <WheelFortune onWin={(p, v) => handleGameOver(v > 0 ? v : 0)} language={language} />}
                     {selectedGame === 'puzzle' && <PuzzleGame onComplete={handleGameOver} language={language} />}
@@ -330,7 +355,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
                  </>
              )}
 
-             {/* INTRO OVERLAY (Not Fullscreen yet, contained) */}
+             {/* INTRO OVERLAY */}
              {showIntro && isGameEnabled && (
                  <GameIntroCard 
                     config={GAMES_CONFIG[selectedGame]} 
