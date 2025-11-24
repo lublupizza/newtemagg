@@ -20,11 +20,11 @@ interface PizzaRunnerProps {
   autoStart?: boolean;
 }
 
-// --- SHARED ASSETS (Defined outside to persist across re-renders) ---
+// --- SHARED ASSETS ---
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const cylinderGeo = new THREE.CylinderGeometry(1, 1, 1, 16);
 const planeGeo = new THREE.PlaneGeometry(1, 1);
-const coneGeo = new THREE.ConeGeometry(1, 1, 16);
+const coneGeo = new THREE.ConeGeometry(1, 1, 1, 16);
 
 // --- UTILS ---
 const HeartShape = () => {
@@ -43,8 +43,7 @@ const HeartShape = () => {
   return shape;
 };
 
-// --- 3D COMPONENTS ---
-
+// --- 3D COMPONENTS (Memoized) ---
 const BrandedBackpack = React.memo(() => {
   const shape = HeartShape();
   const bagMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#fbbf24", roughness: 0.2 }), []);
@@ -55,19 +54,14 @@ const BrandedBackpack = React.memo(() => {
 
   return (
     <group position={[0, 0.5, -0.25]}>
-        {/* Main Bag */}
         <mesh castShadow geometry={boxGeo} material={bagMat} scale={[0.7, 0.7, 0.3]} />
-        {/* Straps */}
         <mesh position={[-0.2, 0, 0.16]} geometry={boxGeo} material={strapMat} scale={[0.1, 0.7, 0.05]} />
         <mesh position={[0.2, 0, 0.16]} geometry={boxGeo} material={strapMat} scale={[0.1, 0.7, 0.05]} />
-        
-        {/* Logo Plate */}
         <group position={[0, 0.1, -0.16]} rotation={[0, Math.PI, 0]} scale={0.5}>
             <mesh position={[0, 0, -0.01]} scale={[0.5, 0.5, 1]}>
                 <circleGeometry args={[1, 32]} />
                 <primitive object={whiteMat} />
             </mesh>
-            {/* 3D Heart Logo */}
             <mesh position={[-0.25, -0.35, 0.02]} rotation={[0, 0, 0]} scale={0.8} material={redMat}>
                 <extrudeGeometry args={[shape, extrudeSettings]} />
             </mesh>
@@ -81,7 +75,6 @@ const SkaterCharacter = React.memo(({ lane, isJumping, speed }: { lane: number, 
   const body = useRef<THREE.Group>(null);
   const board = useRef<THREE.Group>(null);
   
-  // Memoize materials
   const skinMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#fca5a5" }), []);
   const shirtMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#ffffff" }), []);
   const jeanMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#1e3a8a" }), []);
@@ -91,37 +84,25 @@ const SkaterCharacter = React.memo(({ lane, isJumping, speed }: { lane: number, 
 
   useFrame((state, delta) => {
     if (!group.current || !body.current || !board.current) return;
-    
     const targetX = LANES[lane + 1];
-    
-    // X Movement
     group.current.position.x = THREE.MathUtils.lerp(group.current.position.x, targetX, delta * 12);
     
-    // Dynamic Tilt
     const diff = targetX - group.current.position.x;
     const tilt = -diff * 0.8; 
-    const speedLean = Math.min(speed / SPEED_MAX, 1) * 0.3; // Lean forward at high speeds
+    const speedLean = Math.min(speed / SPEED_MAX, 1) * 0.3;
 
     body.current.rotation.z = THREE.MathUtils.lerp(body.current.rotation.z, tilt, delta * 10);
     body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, speedLean, delta * 5);
-    
     board.current.rotation.z = THREE.MathUtils.lerp(board.current.rotation.z, tilt, delta * 10);
     board.current.rotation.x = isJumping ? -0.4 : 0;
   });
 
   return (
     <group ref={group}>
-      {/* CHARACTER BODY */}
       <group ref={body} position={[0, 0.5, 0]}>
          <BrandedBackpack />
-
-         {/* Torso */}
          <mesh position={[0, 0.6, 0]} castShadow geometry={boxGeo} material={shirtMat} scale={[0.5, 0.6, 0.3]} />
-         
-         {/* Head */}
          <mesh position={[0, 1.1, 0]} geometry={boxGeo} material={skinMat} scale={[0.3, 0.35, 0.3]} />
-         
-         {/* Branded Cap */}
          <group position={[0, 1.25, 0]}>
              <mesh castShadow geometry={boxGeo} material={capMat} scale={[0.32, 0.15, 0.35]} />
              <mesh position={[0, -0.05, 0.2]} geometry={boxGeo} material={capMat} scale={[0.32, 0.05, 0.15]} />
@@ -130,34 +111,19 @@ const SkaterCharacter = React.memo(({ lane, isJumping, speed }: { lane: number, 
                  <meshBasicMaterial color="white" />
              </mesh>
          </group>
-
-         {/* Arms */}
          <mesh position={[-0.35, 0.6, 0]} rotation={[0, 0, -0.2]} geometry={boxGeo} material={skinMat} scale={[0.15, 0.5, 0.15]} />
          <mesh position={[0.35, 0.6, 0]} rotation={[0, 0, 0.2]} geometry={boxGeo} material={skinMat} scale={[0.15, 0.5, 0.15]} />
-
-         {/* Jeans */}
          <mesh position={[-0.15, 0.15, 0]} geometry={boxGeo} material={jeanMat} scale={[0.18, 0.4, 0.2]} />
          <mesh position={[0.15, 0.15, 0]} geometry={boxGeo} material={jeanMat} scale={[0.18, 0.4, 0.2]} />
       </group>
-
-      {/* CYBER SKATEBOARD */}
       <group ref={board} position={[0, 0.1, 0]}>
          <mesh castShadow receiveShadow geometry={boxGeo} material={boardMat} scale={[0.6, 0.05, 1.6]} />
-         {/* Neon Underglow */}
          <pointLight position={[0, -0.2, 0]} distance={2} intensity={2} color="#34d399" />
-         
-         {/* Wheels */}
          <mesh position={[0.25, -0.05, 0.5]} rotation={[0, 0, Math.PI/2]} geometry={cylinderGeo} material={wheelMat} scale={[0.08, 0.1, 0.08]} />
          <mesh position={[-0.25, -0.05, 0.5]} rotation={[0, 0, Math.PI/2]} geometry={cylinderGeo} material={wheelMat} scale={[0.08, 0.1, 0.08]} />
          <mesh position={[0.25, -0.05, -0.5]} rotation={[0, 0, Math.PI/2]} geometry={cylinderGeo} material={wheelMat} scale={[0.08, 0.1, 0.08]} />
          <mesh position={[-0.25, -0.05, -0.5]} rotation={[0, 0, Math.PI/2]} geometry={cylinderGeo} material={wheelMat} scale={[0.08, 0.1, 0.08]} />
-
-         {/* Trail Effect at High Speed */}
-         {speed > 30 && (
-             <Trail width={0.4} length={4} color="#34d399" attenuation={(t) => t * t}>
-                 <mesh visible={false} />
-             </Trail>
-         )}
+         {speed > 30 && <Trail width={0.4} length={4} color="#34d399" attenuation={(t) => t * t}><mesh visible={false} /></Trail>}
       </group>
     </group>
   );
@@ -165,24 +131,13 @@ const SkaterCharacter = React.memo(({ lane, isJumping, speed }: { lane: number, 
 
 const DynamicAtmosphere = ({ score }: { score: number }) => {
     useFrame((state) => {
-        let color = new THREE.Color('#1e1b4b'); // Default dark blue
+        let color = new THREE.Color('#1e1b4b'); 
         let fogColor = new THREE.Color('#312e81');
-
-        if (score < 500) {
-            color.set('#4c1d95'); 
-            fogColor.set('#7c3aed');
-        } else if (score < 1500) {
-            color.set('#0f172a');
-            fogColor.set('#1e293b');
-        } else {
-            color.set('#000000');
-            fogColor.set('#000000');
-        }
-
+        if (score < 500) { color.set('#4c1d95'); fogColor.set('#7c3aed'); } 
+        else if (score < 1500) { color.set('#0f172a'); fogColor.set('#1e293b'); } 
+        else { color.set('#000000'); fogColor.set('#000000'); }
         state.scene.background = new THREE.Color().lerp(color, 0.05);
-        if (state.scene.fog) {
-            (state.scene.fog as THREE.Fog).color.lerp(fogColor, 0.05);
-        }
+        if (state.scene.fog) (state.scene.fog as THREE.Fog).color.lerp(fogColor, 0.05);
     });
     return null;
 };
@@ -195,14 +150,9 @@ const RoadChunk = React.memo(({ z, theme }: { z: number, theme: 'sunset' | 'nigh
 
     return (
     <group position={[0, 0, z]}>
-        {/* Main Road */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow geometry={planeGeo} material={roadMat} scale={[12, 20, 1]} />
-        
-        {/* Neon Edges */}
         <mesh position={[-6.2, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} geometry={planeGeo} material={stripMat} scale={[0.4, 20, 1]} />
         <mesh position={[6.2, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} geometry={planeGeo} material={stripMat} scale={[0.4, 20, 1]} />
-
-        {/* Lane Lines */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2, 0.01, 0]} geometry={planeGeo} material={lineMat} scale={[0.15, 20, 1]} />
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-2, 0.01, 0]} geometry={planeGeo} material={lineMat} scale={[0.15, 20, 1]} />
     </group>
@@ -216,27 +166,14 @@ const CyberBus = React.memo(() => {
 
     return (
         <group scale={1.2}>
-            {/* Main Body */}
             <mesh position={[0, 1.2, 0]} castShadow geometry={boxGeo} material={bodyMat} scale={[2.2, 2.0, 5]} />
-            
-            {/* Side Stripe (Neon) */}
             <mesh position={[1.11, 1.5, 0]} geometry={boxGeo} material={neonMat} scale={[0.05, 0.2, 4.8]} />
             <mesh position={[-1.11, 1.5, 0]} geometry={boxGeo} material={neonMat} scale={[0.05, 0.2, 4.8]} />
-
-            {/* Windows (Glowing) */}
             <mesh position={[0, 1.8, 2.51]} geometry={planeGeo} material={windowMat} scale={[1.8, 0.8, 1]} />
             <mesh position={[1.11, 1.8, 0]} rotation={[0, Math.PI/2, 0]} geometry={planeGeo} material={windowMat} scale={[4, 0.8, 1]} />
             <mesh position={[-1.11, 1.8, 0]} rotation={[0, -Math.PI/2, 0]} geometry={planeGeo} material={windowMat} scale={[4, 0.8, 1]} />
-
-            {/* Signage */}
-            <Text position={[0, 2.5, 0]} fontSize={0.4} color="#ef4444" anchorX="center" anchorY="middle" rotation={[0, Math.PI, 0]}>
-                PIZZA EXPRESS
-            </Text>
-            <Text position={[0, 2.5, 0]} fontSize={0.4} color="#ef4444" anchorX="center" anchorY="middle">
-                PIZZA EXPRESS
-            </Text>
-
-            {/* Wheels */}
+            <Text position={[0, 2.5, 0]} fontSize={0.4} color="#ef4444" anchorX="center" anchorY="middle" rotation={[0, Math.PI, 0]}>PIZZA EXPRESS</Text>
+            <Text position={[0, 2.5, 0]} fontSize={0.4} color="#ef4444" anchorX="center" anchorY="middle">PIZZA EXPRESS</Text>
             <mesh position={[1.1, 0.4, 1.5]} rotation={[0, 0, Math.PI/2]} geometry={cylinderGeo} material={wheelMat} scale={[0.4, 0.4, 0.4]} />
             <mesh position={[-1.1, 0.4, 1.5]} rotation={[0, 0, Math.PI/2]} geometry={cylinderGeo} material={wheelMat} scale={[0.4, 0.4, 0.4]} />
             <mesh position={[1.1, 0.4, -1.5]} rotation={[0, 0, Math.PI/2]} geometry={cylinderGeo} material={wheelMat} scale={[0.4, 0.4, 0.4]} />
@@ -262,14 +199,10 @@ const Obstacle = React.memo(({ type, position }: { type: 'cone' | 'barrier' | 'p
 
     return (
         <group ref={mesh} position={position}>
-            {type === 'cone' && (
-                <mesh position={[0, 0.4, 0]} castShadow geometry={coneGeo} material={coneMat} scale={[0.3, 0.8, 0.3]} />
-            )}
+            {type === 'cone' && <mesh position={[0, 0.4, 0]} castShadow geometry={coneGeo} material={coneMat} scale={[0.3, 0.8, 0.3]} />}
             {type === 'barrier' && (
                 <group position={[0, 0.5, 0]}>
-                    <RoundedBox args={[2.2, 1, 0.3]} radius={0.1}>
-                        <primitive object={barrierMat} />
-                    </RoundedBox>
+                    <RoundedBox args={[2.2, 1, 0.3]} radius={0.1}><primitive object={barrierMat} /></RoundedBox>
                     <mesh position={[0, 0, 0.16]} geometry={planeGeo} material={whiteMat} scale={[2, 0.2, 1]} />
                     <mesh position={[0, 0.3, 0.16]} geometry={planeGeo} material={whiteMat} scale={[2, 0.2, 1]} />
                 </group>
@@ -281,9 +214,7 @@ const Obstacle = React.memo(({ type, position }: { type: 'cone' | 'barrier' | 'p
                     <pointLight distance={1} intensity={2} color="yellow" />
                 </group>
             )}
-            {type === 'bus' && (
-                <CyberBus />
-            )}
+            {type === 'bus' && <CyberBus />}
         </group>
     )
 });
@@ -292,7 +223,6 @@ const SideCity = React.memo(({ z, score }: { z: number, score: number }) => {
     const isCyber = score > 500;
     const color = isCyber ? '#1e293b' : '#0f172a';
     const winColor = isCyber ? (Math.random() > 0.5 ? 'cyan' : 'magenta') : 'yellow';
-    
     const buildingMat = useMemo(() => new THREE.MeshStandardMaterial({ color }), [color]);
     const winMat = useMemo(() => new THREE.MeshBasicMaterial({ color: winColor }), [winColor]);
 
@@ -300,15 +230,11 @@ const SideCity = React.memo(({ z, score }: { z: number, score: number }) => {
         <group position={[0, 0, z]}>
             <group position={[-12, 0, 0]}>
                 <mesh position={[0, 5, 0]} geometry={boxGeo} material={buildingMat} scale={[6, 10, 6]} />
-                {Array.from({ length: 5 }).map((_, i) => (
-                    <mesh key={i} position={[3.1, i * 2 + 1, 0]} geometry={planeGeo} material={winMat} scale={[0.5, 1, 1]} />
-                ))}
+                {Array.from({ length: 5 }).map((_, i) => <mesh key={i} position={[3.1, i * 2 + 1, 0]} geometry={planeGeo} material={winMat} scale={[0.5, 1, 1]} />)}
             </group>
             <group position={[12, 0, -10]}>
                 <mesh position={[0, 7, 0]} geometry={boxGeo} material={buildingMat} scale={[6, 14, 6]} />
-                {Array.from({ length: 8 }).map((_, i) => (
-                    <mesh key={i} position={[-3.1, i * 1.5 + 1, 0]} geometry={planeGeo} material={winMat} scale={[0.5, 0.8, 1]} />
-                ))}
+                {Array.from({ length: 8 }).map((_, i) => <mesh key={i} position={[-3.1, i * 1.5 + 1, 0]} geometry={planeGeo} material={winMat} scale={[0.5, 0.8, 1]} />)}
             </group>
         </group>
     )
@@ -321,7 +247,6 @@ const GameWorld = ({ isPlaying, speed, playerLane, playerY, onHit, onCollect, sc
 
     useFrame((state, delta) => {
         if (!isPlaying) return;
-
         setObjects(prev => {
             const next = prev.map(obj => ({ ...obj, z: obj.z + speed * delta }));
             return next.filter(obj => {
@@ -330,81 +255,37 @@ const GameWorld = ({ isPlaying, speed, playerLane, playerY, onHit, onCollect, sc
                     const objLaneX = LANES[obj.lane];
                     const playerLaneX = LANES[playerLane + 1];
                     if (objLaneX === playerLaneX) {
-                        if (obj.type === 'pizza') {
-                            onCollect();
-                            return false; 
-                        } else {
-                            if (playerY < 0.5) {
-                                onHit(0);
-                                return false;
-                            }
-                        }
+                        if (obj.type === 'pizza') { onCollect(); return false; } 
+                        else { if (playerY < 0.5) { onHit(0); return false; } }
                     }
                 }
                 return obj.z < 15;
             });
         });
-
         spawnTimer.current -= delta;
         if (spawnTimer.current <= 0) {
             const lane = Math.floor(Math.random() * 3);
             let type = 'barrier';
             const r = Math.random();
-            if (r > 0.85) type = 'pizza';
-            else if (r > 0.65) type = 'cone';
-            else if (r > 0.50) type = 'bus';
-            
-            setObjects(prev => [...prev, {
-                id: Math.random(),
-                type,
-                lane,
-                z: -60,
-                active: true
-            }]);
-            const extraDelay = type === 'bus' ? 0.5 : 0;
-            spawnTimer.current = (30 / speed) + extraDelay; 
+            if (r > 0.85) type = 'pizza'; else if (r > 0.65) type = 'cone'; else if (r > 0.50) type = 'bus';
+            setObjects(prev => [...prev, { id: Math.random(), type, lane, z: -60, active: true }]);
+            spawnTimer.current = (30 / speed) + (type === 'bus' ? 0.5 : 0);
         }
     });
 
     return (
         <group>
-            <RoadChunk z={0} theme={theme} />
-            <RoadChunk z={-20} theme={theme} />
-            <RoadChunk z={-40} theme={theme} />
-            <RoadChunk z={-60} theme={theme} />
-            <SideCity z={0} score={score} />
-            <SideCity z={-20} score={score} />
-            <SideCity z={-40} score={score} />
-            <SideCity z={-60} score={score} />
-            {objects.map(obj => (
-                <Obstacle key={obj.id} type={obj.type} position={[LANES[obj.lane], 0, obj.z]} />
-            ))}
+            {[0, -20, -40, -60].map(z => <React.Fragment key={z}><RoadChunk z={z} theme={theme} /><SideCity z={z} score={score} /></React.Fragment>)}
+            {objects.map(obj => <Obstacle key={obj.id} type={obj.type} position={[LANES[obj.lane], 0, obj.z]} />)}
         </group>
     );
 }
 
 const WarpEffect = ({ speed }: { speed: number }) => {
     const starsRef = useRef<any>(null);
-    useFrame(() => {
-        if (starsRef.current) {
-            starsRef.current.rotation.z += 0.001 * speed;
-        }
-    });
-    return (
-        <Stars 
-            ref={starsRef} 
-            radius={50} 
-            depth={50} 
-            count={speed > 40 ? 2000 : 500} 
-            factor={speed > 40 ? 6 : 4} 
-            saturation={0} 
-            fade 
-            speed={speed / 10} 
-        />
-    );
+    useFrame(() => { if (starsRef.current) starsRef.current.rotation.z += 0.001 * speed; });
+    return <Stars ref={starsRef} radius={50} depth={50} count={speed > 40 ? 2000 : 500} factor={speed > 40 ? 6 : 4} saturation={0} fade speed={speed / 10} />;
 }
-
-// --- MAIN COMPONENT ---
 
 const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActive, autoStart }) => {
   const [gameState, setGameState] = useState<'start' | 'playing' | 'dead'>('start');
@@ -415,6 +296,9 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
   const playerYRef = useRef(0);
   const playerVelYRef = useRef(0);
   const playerGroup = useRef<THREE.Group>(null);
+  
+  // MOBILE OPTIMIZATION: Touch references
+  const touchStartRef = useRef<{x: number, y: number} | null>(null);
 
   const startGame = () => {
     setGameState('playing');
@@ -425,20 +309,38 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
     playerVelYRef.current = 0;
   };
 
-  useEffect(() => {
-      if (autoStart && isActive && gameState === 'start') {
-          startGame();
+  useEffect(() => { if (autoStart && isActive && gameState === 'start') startGame(); }, [autoStart, isActive]);
+
+  // MOBILE OPTIMIZATION: Handle Swipes and Taps
+  const handleTouchStart = (e: React.TouchEvent) => {
+      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+      if (!touchStartRef.current || gameState !== 'playing') return;
+      
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const diffX = endX - touchStartRef.current.x;
+      const diffY = endY - touchStartRef.current.y;
+      
+      // Swipe threshold
+      if (Math.abs(diffX) > 30) {
+          if (diffX > 0) playerLaneRef.current = Math.min(1, playerLaneRef.current + 1); // Right
+          else playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1); // Left
+      } else if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
+          // Tap to Jump
+          if(playerYRef.current <= 0) playerVelYRef.current = JUMP_FORCE;
       }
-  }, [autoStart, isActive]);
+      touchStartRef.current = null;
+  };
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (gameState !== 'playing') return;
       if (e.key === 'ArrowLeft' || e.key === 'a') playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1);
       if (e.key === 'ArrowRight' || e.key === 'd') playerLaneRef.current = Math.min(1, playerLaneRef.current + 1);
-      if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') && playerYRef.current <= 0) {
-        playerVelYRef.current = JUMP_FORCE;
-      }
+      if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') && playerYRef.current <= 0) playerVelYRef.current = JUMP_FORCE;
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
@@ -449,13 +351,8 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
         if (gameState !== 'playing') return;
         playerYRef.current += playerVelYRef.current;
         playerVelYRef.current -= GRAVITY * 0.015;
-        if (playerYRef.current < 0) {
-            playerYRef.current = 0;
-            playerVelYRef.current = 0;
-        }
-        if (playerGroup.current) {
-            playerGroup.current.position.y = playerYRef.current;
-        }
+        if (playerYRef.current < 0) { playerYRef.current = 0; playerVelYRef.current = 0; }
+        if (playerGroup.current) playerGroup.current.position.y = playerYRef.current;
         setScore(s => s + 1);
         setSpeed(s => Math.min(s + delta * 0.8, SPEED_MAX));
     });
@@ -471,56 +368,47 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
   };
 
   return (
-    <div className="w-full h-[600px] relative bg-black rounded-3xl overflow-hidden border-4 border-pink-500 shadow-[0_0_50px_rgba(236,72,153,0.4)]">
+    <div 
+        className="w-full h-full relative bg-black overflow-hidden select-none"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+    >
         <Canvas shadows camera={{ position: [0, 3, 6], fov: 60 }} dpr={[1, 1.5]} gl={{ powerPreference: "high-performance" }}>
             <DynamicAtmosphere score={score} />
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 20, 5]} intensity={1.5} castShadow shadow-bias={-0.0001} />
             <pointLight position={[0, 2, 2]} intensity={1} color="orange" />
-
             <group>
                 <group ref={playerGroup}>
-                    <SkaterCharacter 
-                        lane={playerLaneRef.current} 
-                        isJumping={playerYRef.current > 0}
-                        speed={speed}
-                    />
+                    <SkaterCharacter lane={playerLaneRef.current} isJumping={playerYRef.current > 0} speed={speed} />
                 </group>
-                <GameWorld 
-                    isPlaying={gameState === 'playing'} 
-                    speed={speed}
-                    playerLane={playerLaneRef.current}
-                    playerY={playerYRef.current}
-                    score={score}
-                    onHit={() => { setGameState('dead'); onGameOver(Math.floor(score/10)); }}
-                    onCollect={() => setScore(s => s + 500)}
-                />
+                <GameWorld isPlaying={gameState === 'playing'} speed={speed} playerLane={playerLaneRef.current} playerY={playerYRef.current} score={score} onHit={() => { setGameState('dead'); onGameOver(Math.floor(score/10)); }} onCollect={() => setScore(s => s + 500)} />
             </group>
             <PhysicsLoop />
             <WarpEffect speed={speed} />
         </Canvas>
 
-        <div className="absolute inset-0 pointer-events-none p-6 flex flex-col justify-between">
+        <div className="absolute inset-0 pointer-events-none p-4 md:p-6 flex flex-col justify-between">
             <div className="flex justify-between items-start">
                 <div>
-                    <h3 className="text-3xl font-black italic text-white drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]">{t.title}</h3>
-                    <div className="flex items-center gap-2 text-pink-400 font-mono text-xs tracking-widest">
-                        <Wind className="w-3 h-3" /> {Math.floor(speed * 3)} KM/H
-                    </div>
+                    <h3 className="text-2xl md:text-3xl font-black italic text-white drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]">{t.title}</h3>
+                    <div className="flex items-center gap-2 text-pink-400 font-mono text-xs tracking-widest"><Wind className="w-3 h-3" /> {Math.floor(speed * 3)} KM/H</div>
                 </div>
                 <div className="text-right">
                     <div className="text-xs font-bold text-yellow-400 uppercase tracking-widest">{t.score}</div>
-                    <div className="text-5xl font-black text-white font-mono drop-shadow-md">{score}</div>
+                    <div className="text-3xl md:text-5xl font-black text-white font-mono drop-shadow-md">{score}</div>
                 </div>
             </div>
 
+            {/* MOBILE OPTIMIZATION: Invisible controls visual hint */}
             {gameState === 'playing' && (
-                <div className="grid grid-cols-2 gap-4 pointer-events-auto h-48">
-                    <div className="active:bg-white/10 transition-colors rounded-2xl" onPointerDown={() => playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1)}></div>
-                    <div className="active:bg-white/10 transition-colors rounded-2xl" onPointerDown={() => playerLaneRef.current = Math.min(1, playerLaneRef.current + 1)}></div>
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-24 h-24 rounded-full border-2 border-white/20 active:bg-white/20 flex items-center justify-center" onPointerDown={() => { if(playerYRef.current <= 0) playerVelYRef.current = JUMP_FORCE; }}>
-                        <Zap className="w-8 h-8 text-white opacity-50" />
-                    </div>
+                <div className="grid grid-cols-2 gap-4 pointer-events-auto h-full absolute inset-0 z-10 opacity-0">
+                    {/* Left Zone */}
+                    <div onPointerDown={() => playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1)}></div>
+                    {/* Right Zone */}
+                    <div onPointerDown={() => playerLaneRef.current = Math.min(1, playerLaneRef.current + 1)}></div>
+                    {/* Jump Overlay (Bottom Center) */}
+                    <div className="absolute bottom-0 left-1/4 w-1/2 h-1/3" onPointerDown={() => { if(playerYRef.current <= 0) playerVelYRef.current = JUMP_FORCE; }}></div>
                 </div>
             )}
 
@@ -528,12 +416,10 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
                 <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto z-20">
                     <div className="relative">
                         <div className="absolute inset-0 bg-pink-500 blur-3xl opacity-20 animate-pulse"></div>
-                        <Zap className="w-24 h-24 text-yellow-400 relative z-10 mb-6 drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]" />
+                        <Zap className="w-16 h-16 md:w-24 md:h-24 text-yellow-400 relative z-10 mb-6 drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]" />
                     </div>
-                    <h1 className="text-6xl font-black text-white italic tracking-tighter mb-8 text-center leading-none">
-                        CYBER<br/><span className="text-pink-500">DELIVERY</span>
-                    </h1>
-                    <button onClick={startGame} className="px-12 py-5 bg-white text-black font-black text-2xl rounded-full hover:scale-110 hover:bg-pink-400 hover:text-white transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(255,255,255,0.4)]">
+                    <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter mb-8 text-center leading-none">CYBER<br/><span className="text-pink-500">DELIVERY</span></h1>
+                    <button onClick={startGame} className="px-10 py-4 md:px-12 md:py-5 bg-white text-black font-black text-xl md:text-2xl rounded-full hover:scale-110 hover:bg-pink-400 hover:text-white transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(255,255,255,0.4)]">
                         <Play className="fill-current w-6 h-6" /> {t.start}
                     </button>
                 </div>
@@ -541,10 +427,10 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
 
             {gameState === 'dead' && (
                 <div className="absolute inset-0 bg-red-900/80 backdrop-blur-md flex flex-col items-center justify-center pointer-events-auto z-20 animate-in zoom-in duration-300">
-                    <Skull className="w-24 h-24 text-white mb-4 animate-pulse" />
-                    <h2 className="text-6xl font-black text-white mb-2">{t.gameover}</h2>
-                    <div className="text-pink-200 font-mono text-xl mb-8">SCORE: {score}</div>
-                    <button onClick={startGame} className="px-10 py-4 bg-white text-red-900 font-bold text-xl rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2">
+                    <Skull className="w-16 h-16 md:w-24 md:h-24 text-white mb-4 animate-pulse" />
+                    <h2 className="text-4xl md:text-6xl font-black text-white mb-2">{t.gameover}</h2>
+                    <div className="text-pink-200 font-mono text-lg md:text-xl mb-8">SCORE: {score}</div>
+                    <button onClick={startGame} className="px-8 py-3 md:px-10 md:py-4 bg-white text-red-900 font-bold text-lg md:text-xl rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2">
                         <RotateCcw className="w-6 h-6" /> {t.restart}
                     </button>
                 </div>
