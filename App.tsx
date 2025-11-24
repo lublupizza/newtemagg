@@ -1,24 +1,28 @@
 
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
-import GameZone from './components/GameZone';
-import Menu from './components/Menu';
-import AdminDashboard from './components/AdminDashboard';
-import RewardsStore from './components/RewardsStore';
-import SeasonalEvent from './components/SeasonalEvent';
-import QuizGame from './components/QuizGame';
-import WheelFortune from './components/WheelFortune';
-import PuzzleGame from './components/PuzzleGame';
-import GlobalRankings from './components/GlobalRankings';
-import ScratchGame from './components/ScratchGame';
-import UserProfile from './components/UserProfile';
 import AuthModal from './components/AuthModal';
 import MaintenanceScreen from './components/MaintenanceScreen';
 import LaunchScreen from './components/LaunchScreen';
 import DisabledGameScreen from './components/DisabledGameScreen';
 import DisabledEventScreen from './components/DisabledEventScreen';
+import ForkiEasterEgg from './components/ForkiEasterEgg';
 import { AppView, User, Language, PurchaseItem, InventoryItem, Achievement, PromoItem, GamesConfig, ShopItem } from './types';
+import { Loader2 } from 'lucide-react';
+
+// --- LAZY LOAD HEAVY COMPONENTS FOR OPTIMIZATION ---
+const GameZone = lazy(() => import('./components/GameZone'));
+const Menu = lazy(() => import('./components/Menu'));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const RewardsStore = lazy(() => import('./components/RewardsStore'));
+const SeasonalEvent = lazy(() => import('./components/SeasonalEvent'));
+const QuizGame = lazy(() => import('./components/QuizGame'));
+const WheelFortune = lazy(() => import('./components/WheelFortune'));
+const PuzzleGame = lazy(() => import('./components/PuzzleGame'));
+const GlobalRankings = lazy(() => import('./components/GlobalRankings'));
+const ScratchGame = lazy(() => import('./components/ScratchGame'));
+const UserProfile = lazy(() => import('./components/UserProfile'));
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<AppView>(AppView.HOME);
@@ -26,6 +30,7 @@ const App: React.FC = () => {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isMaintenance, setIsMaintenance] = useState(false);
   const [isLaunchMode, setIsLaunchMode] = useState(false);
+  const [isForkiOpen, setIsForkiOpen] = useState(false);
   
   // Games Status State
   const [gamesStatus, setGamesStatus] = useState<GamesConfig>({
@@ -236,101 +241,138 @@ const App: React.FC = () => {
       if (isLaunchMode) return <LaunchScreen />;
   }
 
+  // Loading Fallback for Lazy Components
+  const LoadingView = () => (
+      <div className="min-h-[600px] flex items-center justify-center bg-gray-900">
+          <Loader2 className="w-12 h-12 text-pink-500 animate-spin" />
+      </div>
+  );
+
   const renderView = () => {
     switch (currentView) {
       case AppView.HOME:
         return (
           <>
             <Hero onNavigate={setCurrentView} onAuth={() => setIsAuthOpen(true)} language={language} user={user} promos={heroPromos} />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><Menu language={language} /></div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <Suspense fallback={<LoadingView />}>
+                    <Menu language={language} />
+                </Suspense>
+            </div>
           </>
         );
       case AppView.GAMES:
         return (
           <div className="max-w-6xl mx-auto px-4 py-12">
-            <GameZone onScoreUpdate={handleScoreUpdate} language={language} gamesStatus={gamesStatus} />
+            <Suspense fallback={<LoadingView />}>
+                <GameZone onScoreUpdate={handleScoreUpdate} language={language} gamesStatus={gamesStatus} />
+            </Suspense>
           </div>
         );
       case AppView.QUIZ:
         if (!gamesStatus.quiz) return <div className="max-w-4xl mx-auto px-4 py-12 min-h-[600px] relative"><DisabledGameScreen title={language === 'ru' ? 'ВИКТОРИНА' : 'QUIZ'} language={language} /></div>;
         return (
           <div className="max-w-6xl mx-auto px-4 py-12">
-             <QuizGame language={language} onComplete={handleScoreUpdate} />
+             <Suspense fallback={<LoadingView />}>
+                <QuizGame language={language} onComplete={handleScoreUpdate} />
+             </Suspense>
           </div>
         );
       case AppView.WHEEL:
         if (!gamesStatus.wheel) return <div className="max-w-4xl mx-auto px-4 py-12 min-h-[600px] relative"><DisabledGameScreen title={language === 'ru' ? 'КОЛЕСО ФОРТУНЫ' : 'WHEEL OF FORTUNE'} language={language} /></div>;
         return (
           <div className="max-w-6xl mx-auto px-4 py-12">
-             <WheelFortune language={language} onWin={handleWin} />
+             <Suspense fallback={<LoadingView />}>
+                <WheelFortune language={language} onWin={handleWin} />
+             </Suspense>
           </div>
         );
       case AppView.PUZZLE:
         if (!gamesStatus.puzzle) return <div className="max-w-4xl mx-auto px-4 py-12 min-h-[600px] relative"><DisabledGameScreen title={language === 'ru' ? 'ПАЗЛЫ' : 'PUZZLE'} language={language} /></div>;
         return (
           <div className="max-w-6xl mx-auto px-4 py-12">
-             <PuzzleGame language={language} onComplete={handleScoreUpdate} />
+             <Suspense fallback={<LoadingView />}>
+                <PuzzleGame language={language} onComplete={handleScoreUpdate} />
+             </Suspense>
           </div>
         );
       case AppView.SCRATCH:
         if (!gamesStatus.scratch) return <div className="max-w-4xl mx-auto px-4 py-12 min-h-[600px] relative"><DisabledGameScreen title={language === 'ru' ? 'СЧАСТЛИВАЯ КАРТА' : 'SCRATCH CARD'} language={language} /></div>;
         return (
           <div className="max-w-6xl mx-auto px-4 py-12">
-             <ScratchGame language={language} onWin={handleScratchWin} />
+             <Suspense fallback={<LoadingView />}>
+                <ScratchGame language={language} onWin={handleScratchWin} />
+             </Suspense>
           </div>
         );
       case AppView.SEASONAL:
         if (!isEventEnabled) return <div className="max-w-4xl mx-auto px-4 py-12 min-h-[600px] relative"><DisabledEventScreen language={language} /></div>;
         return (
           <div className="max-w-6xl mx-auto px-4 py-12">
-             <SeasonalEvent language={language} userPoints={user.points} onPurchase={handlePurchase} onBack={() => setCurrentView(AppView.HOME)} />
+             <Suspense fallback={<LoadingView />}>
+                <SeasonalEvent language={language} userPoints={user.points} onPurchase={handlePurchase} onBack={() => setCurrentView(AppView.HOME)} />
+             </Suspense>
           </div>
         );
       case AppView.SHOP:
         return (
           <div className="max-w-6xl mx-auto px-4 py-12">
-             <RewardsStore 
-                userPoints={user.points} 
-                language={language} 
-                onPurchase={handlePurchase} 
-                history={purchaseHistory} 
-                inventory={inventory} 
-                onRedeem={handleRedeemCode}
-                shopItems={shopItems}
-             />
+             <Suspense fallback={<LoadingView />}>
+                <RewardsStore 
+                    userPoints={user.points} 
+                    language={language} 
+                    onPurchase={handlePurchase} 
+                    history={purchaseHistory} 
+                    inventory={inventory} 
+                    onRedeem={handleRedeemCode}
+                    shopItems={shopItems}
+                />
+             </Suspense>
           </div>
         );
       case AppView.MENU:
         return (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><Menu language={language} /></div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <Suspense fallback={<LoadingView />}>
+                  <Menu language={language} />
+              </Suspense>
+          </div>
         );
       case AppView.RANKINGS:
         return (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><GlobalRankings language={language} /></div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <Suspense fallback={<LoadingView />}>
+                  <GlobalRankings language={language} />
+              </Suspense>
+          </div>
         );
       case AppView.ADMIN:
         return (
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <AdminDashboard 
-              language={language} 
-              heroPromos={heroPromos}
-              setHeroPromos={setHeroPromos}
-              isMaintenance={isMaintenance}
-              setMaintenance={setIsMaintenance}
-              isLaunchMode={isLaunchMode}
-              setLaunchMode={setIsLaunchMode}
-              gamesStatus={gamesStatus}
-              setGamesStatus={setGamesStatus}
-              isEventEnabled={isEventEnabled}
-              setEventEnabled={setIsEventEnabled}
-              shopItems={shopItems}
-              setShopItems={setShopItems}
-            />
+            <Suspense fallback={<LoadingView />}>
+                <AdminDashboard 
+                language={language} 
+                heroPromos={heroPromos}
+                setHeroPromos={setHeroPromos}
+                isMaintenance={isMaintenance}
+                setMaintenance={setIsMaintenance}
+                isLaunchMode={isLaunchMode}
+                setLaunchMode={setIsLaunchMode}
+                gamesStatus={gamesStatus}
+                setGamesStatus={setGamesStatus}
+                isEventEnabled={isEventEnabled}
+                setEventEnabled={setIsEventEnabled}
+                shopItems={shopItems}
+                setShopItems={setShopItems}
+                />
+            </Suspense>
           </div>
         );
       case AppView.PROFILE:
         return (
-          <UserProfile user={user} inventory={inventory} language={language} achievements={achievements} />
+          <Suspense fallback={<LoadingView />}>
+              <UserProfile user={user} inventory={inventory} language={language} achievements={achievements} />
+          </Suspense>
         );
       default:
         return <Hero onNavigate={setCurrentView} onAuth={() => setIsAuthOpen(true)} language={language} user={user} promos={heroPromos} />;
@@ -344,6 +386,9 @@ const App: React.FC = () => {
       )}
       
       <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onLogin={handleLogin} language={language} />
+      
+      {/* FORKI EASTER EGG MODAL */}
+      {isForkiOpen && <ForkiEasterEgg onClose={() => setIsForkiOpen(false)} />}
 
       <main className="fade-in-up">{renderView()}</main>
 
@@ -351,7 +396,15 @@ const App: React.FC = () => {
           <footer className="bg-gray-900 border-t border-gray-800 py-12 mt-24">
             <div className="max-w-7xl mx-auto px-4 text-center text-gray-500">
               <p className="font-retro mb-4 text-lg text-gray-400">ЛюблюPizzaClub</p>
-              <p>{language === 'ru' ? '© 2025 Курск. Центр Инноваций Пиццы. На базе Gemini AI.' : '© 2025 Kursk Pizza Innovation Center. Powered by Gemini AI.'}</p>
+              <p className="text-sm font-mono uppercase tracking-wider">
+                  2025 Курск. Центр Инноваций Пиццы. prod. by {' '}
+                  <span 
+                    onClick={() => setIsForkiOpen(true)} 
+                    className="text-pink-500 font-bold cursor-pointer hover:text-white hover:underline transition-colors"
+                  >
+                    ForkiStyle
+                  </span>
+              </p>
             </div>
           </footer>
       )}

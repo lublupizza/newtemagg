@@ -258,24 +258,19 @@ const BackgroundForest = React.memo(() => {
 const FlyingSanta = React.memo(() => {
     const group = useRef<THREE.Group>(null);
     const model = useRef<THREE.Group>(null);
-    const assets = useAssets(); // Reuse assets for Heart
+    const assets = useAssets(); 
     
     useFrame(({ clock }) => {
         if (group.current && model.current) {
-            const t = clock.getElapsedTime() * 0.3; // Speed
+            const t = clock.getElapsedTime() * 0.3; 
             const radius = 13; 
             
-            // Circular Path
             const x = Math.sin(t) * radius;
             const z = Math.cos(t) * radius;
-            const y = 5 + Math.sin(t * 2) * 1; // Bobbing
+            const y = 5 + Math.sin(t * 2) * 1; 
 
             group.current.position.set(x, y, z);
-            
-            // Orient forward: Angle + 90 deg (PI/2)
             group.current.rotation.y = t + Math.PI / 2; 
-            
-            // Banking (Tilt) only the model, not the group container
             model.current.rotation.z = -0.2; 
         }
     });
@@ -283,35 +278,25 @@ const FlyingSanta = React.memo(() => {
     return (
         <group ref={group}>
             <group ref={model}>
-                {/* Sleigh Body */}
                 <mesh position={[0, 0.3, 0]}><boxGeometry args={[1.0, 0.5, 1.6]} /><meshStandardMaterial color="#dc2626" /></mesh>
-                {/* Runners */}
                 <mesh position={[0.4, -0.1, 0]}><boxGeometry args={[0.05, 0.05, 2.0]} /><meshStandardMaterial color="#fbbf24" /></mesh>
                 <mesh position={[-0.4, -0.1, 0]}><boxGeometry args={[0.05, 0.05, 2.0]} /><meshStandardMaterial color="#fbbf24" /></mesh>
                 
-                {/* Detailed Santa */}
                 <group position={[0, 0.6, -0.2]}>
-                    {/* Body */}
                     <mesh><sphereGeometry args={[0.35]} /><meshStandardMaterial color="#dc2626" /></mesh>
-                    {/* Head */}
                     <mesh position={[0, 0.35, 0]}><sphereGeometry args={[0.18]} /><meshStandardMaterial color="#fca5a5" /></mesh>
-                    {/* Beard */}
                     <mesh position={[0, 0.3, 0.15]} rotation={[0.5,0,0]}><coneGeometry args={[0.15, 0.3, 8]} /><meshStandardMaterial color="white" /></mesh>
-                    {/* Hat */}
                     <mesh position={[0, 0.55, 0]} rotation={[-0.2, 0, 0]}><coneGeometry args={[0.18, 0.4]} /><meshStandardMaterial color="#dc2626" /></mesh>
                     <mesh position={[0, 0.75, -0.1]}><sphereGeometry args={[0.05]} /><meshStandardMaterial color="white" /></mesh>
                 </group>
 
-                {/* Reindeer Team */}
                 {[1.5, 2.5].map((zOffset, i) => (
                     <group key={i} position={[0, -0.2, zOffset]}>
-                        {/* Left Deer */}
                         <group position={[0.3, 0, 0]}>
                             <mesh><boxGeometry args={[0.2, 0.3, 0.6]} /><meshStandardMaterial color="#78350f" /></mesh>
                             <mesh position={[0, 0.3, 0.3]}><boxGeometry args={[0.15, 0.2, 0.25]} /><meshStandardMaterial color="#78350f" /></mesh>
                             {i===1 && <mesh position={[0, 0.3, 0.45]}><sphereGeometry args={[0.05]} /><meshBasicMaterial color="red" /></mesh>}
                         </group>
-                        {/* Right Deer */}
                         <group position={[-0.3, 0, 0]}>
                             <mesh><boxGeometry args={[0.2, 0.3, 0.6]} /><meshStandardMaterial color="#78350f" /></mesh>
                             <mesh position={[0, 0.3, 0.3]}><boxGeometry args={[0.15, 0.2, 0.25]} /><meshStandardMaterial color="#78350f" /></mesh>
@@ -322,7 +307,6 @@ const FlyingSanta = React.memo(() => {
 
                 {/* Branding Banner - Attached to back */}
                 <group position={[0, 0.6, -1.0]} rotation={[0, Math.PI, 0]}>
-                    {/* Red Glass Frame */}
                     <mesh position={[0, 0, 0]}>
                         <boxGeometry args={[1.8, 0.6, 0.06]} />
                         <meshPhysicalMaterial 
@@ -337,15 +321,8 @@ const FlyingSanta = React.memo(() => {
                             thickness={1}
                         />
                     </mesh>
-                    
-                    {/* White Banner Face */}
                     <mesh position={[0, 0, 0.04]}><planeGeometry args={[1.6, 0.45]} /><meshStandardMaterial color="white" emissive="white" emissiveIntensity={0.2} /></mesh>
-                    
-                    <Text position={[0, 0, 0.05]} fontSize={0.2} color="#dc2626" anchorX="center" anchorY="middle">
-                        ЛюблюPizza
-                    </Text>
-                    
-                    {/* Heart Icons on Banner Frame */}
+                    <Text position={[0, 0, 0.05]} fontSize={0.2} color="#dc2626" anchorX="center" anchorY="middle">ЛюблюPizza</Text>
                     <mesh position={[0.7, 0, 0.04]} rotation={[Math.PI, 0, 0]} scale={0.15} geometry={assets.heartGeo} material={assets.glowingRed} />
                     <mesh position={[-0.7, 0, 0.04]} rotation={[Math.PI, 0, 0]} scale={0.15} geometry={assets.heartGeo} material={assets.glowingRed} />
                 </group>
@@ -398,7 +375,7 @@ const TreeGarland = React.memo(({ typeId }: { typeId: string | null }) => {
             const t = i / 100;
             const angle = t * Math.PI * 2 * loops;
             const y = startY - (t * height); 
-            const r = 0.2 + (3.2 * t); // Expanding radius
+            const r = 0.2 + (3.2 * t);
             points.push(new THREE.Vector3(Math.cos(angle) * r, y, Math.sin(angle) * r));
         }
         return new THREE.CatmullRomCurve3(points);
@@ -414,23 +391,18 @@ const TreeGarland = React.memo(({ typeId }: { typeId: string | null }) => {
                 const pos = curve.getPoint(t);
                 const color = def.colors[i % def.colors.length];
                 return (
-                    <mesh key={i} position={pos}>
-                        <sphereGeometry args={[0.07]} />
-                        <meshBasicMaterial color={color} />
-                        <pointLight distance={1.5} intensity={def.intensity} color={color} />
-                    </mesh>
+                    <mesh key={i} position={pos}><sphereGeometry args={[0.07]} /><meshBasicMaterial color={color} /><pointLight distance={1.5} intensity={def.intensity} color={color} /></mesh>
                 )
             })}
         </group>
     )
 });
 
-const HeroTree = ({ selectedDecor, placedItems, onPlace, garlandId, topperId }: any) => {
+const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, topperId }: any) => {
     const assets = useAssets();
     const [ghostPos, setGhostPos] = useState<THREE.Vector3 | null>(null);
     const [ghostRot, setGhostRot] = useState<THREE.Quaternion>(new THREE.Quaternion());
 
-    // Simplified Raycast Logic (Math based)
     const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
         if (!selectedDecor) return;
         e.stopPropagation();
@@ -440,13 +412,12 @@ const HeroTree = ({ selectedDecor, placedItems, onPlace, garlandId, topperId }: 
         const point = e.point;
         const y = Math.max(treeBottomY, Math.min(treeTopY, point.y));
         const progress = (treeTopY - y) / (treeTopY - treeBottomY);
-        const r = maxRadius * progress; // Expected radius at this height
+        const r = maxRadius * progress; 
         const angle = Math.atan2(point.z, point.x);
         const x = Math.cos(angle) * r;
         const z = Math.sin(angle) * r;
         const pos = new THREE.Vector3(x, y, z);
         
-        // Rotation to face out
         const dummy = new THREE.Object3D();
         dummy.position.set(0,0,0);
         dummy.lookAt(x, 0, z); 
@@ -464,13 +435,11 @@ const HeroTree = ({ selectedDecor, placedItems, onPlace, garlandId, topperId }: 
 
     return (
         <group>
-            {/* Interaction Hull */}
             <mesh visible={false} position={[0, 4.5, 0]} onPointerMove={handlePointerMove} onClick={handleClick} onPointerOut={() => setGhostPos(null)}>
                 <cylinderGeometry args={[0, 3.5, 9, 16]} />
                 <meshBasicMaterial color="red" />
             </mesh>
 
-            {/* Visual Tree */}
             <group position={[0, 0, 0]}>
                 <mesh position={[0, 0.5, 0]}><cylinderGeometry args={[0.6, 1, 1.5, 8]} /><meshStandardMaterial color="#3E2723" /></mesh>
                 {[2, 4, 5.8, 7.2].map((y, i) => {
@@ -482,22 +451,11 @@ const HeroTree = ({ selectedDecor, placedItems, onPlace, garlandId, topperId }: 
 
             <TreeGarland typeId={garlandId} />
 
-            {/* 3D Toppers */}
             {topperId && (
                 <group position={[0, 8.0, 0]}>
                     {topperId === 'star' && <mesh position={[0, 0.2, 0]}><octahedronGeometry args={[0.6]} /><meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={1} /></mesh>}
-                    {topperId === 'heart' && (
-                        <group scale={1.5} rotation={[Math.PI, 0, 0]} position={[0, 0.2, 0]}>
-                             <mesh geometry={assets.heartGeo} material={assets.glowingRed} />
-                        </group>
-                    )}
-                    {topperId === 'snowflake' && (
-                        <group>
-                            {[0, 1, 2].map(k => (
-                                <mesh key={k} rotation={[0, 0, k * Math.PI/3]}><boxGeometry args={[0.1, 1.2, 0.1]} /><meshStandardMaterial color="#bae6fd" emissive="#bae6fd" /></mesh>
-                            ))}
-                        </group>
-                    )}
+                    {topperId === 'heart' && <group scale={1.5} rotation={[Math.PI, 0, 0]} position={[0, 0.2, 0]}><mesh geometry={assets.heartGeo} material={assets.glowingRed} /></group>}
+                    {topperId === 'snowflake' && <group>{[0, 1, 2].map(k => <mesh key={k} rotation={[0, 0, k * Math.PI/3]}><boxGeometry args={[0.1, 1.2, 0.1]} /><meshStandardMaterial color="#bae6fd" emissive="#bae6fd" /></mesh>)}</group>}
                 </group>
             )}
 
@@ -512,19 +470,41 @@ const HeroTree = ({ selectedDecor, placedItems, onPlace, garlandId, topperId }: 
             )}
         </group>
     );
-};
+});
 
 const LoadingSpinner = () => (
-    <group rotation={[0,0,0]}>
-       <mesh>
-          <torusGeometry args={[2, 0.2, 16, 100]} />
-          <meshStandardMaterial color="white" />
-       </mesh>
-    </group>
+    <group rotation={[0,0,0]}><mesh><torusGeometry args={[2, 0.2, 16, 100]} /><meshStandardMaterial color="white" /></mesh></group>
 );
 
+// Memoized Scene Container to prevent re-renders from UI
+const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, setContainerRef }: any) => (
+    <div ref={setContainerRef} className="absolute inset-0 z-0">
+        <Canvas shadows camera={{ position: [0, 5, 14], fov: 50 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
+            <Suspense fallback={<LoadingSpinner />}>
+                <ambientLight intensity={0.5} color="#3b82f6" />
+                <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
+                <spotLight position={[5, 10, 5]} angle={0.5} penumbra={1} intensity={2} color="white" castShadow target-position={[0, 4, 0]} />
+                <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade speed={0.5} />
+                <fog attach="fog" args={['#0f172a', 15, 45]} />
+                <HeroTree selectedDecor={selectedDecor} placedItems={placedItems} onPlace={onPlace} garlandId={garland} topperId={topper} />
+                {Array.from({ length: 5 }).map((_, i) => {
+                    const a = (i / 5) * Math.PI * 2;
+                    return <BrandedHouse key={i} position={[Math.sin(a)*16, 0, Math.cos(a)*16]} rotation={[0, a + Math.PI, 0]} />
+                })}
+                <BackgroundForest />
+                <Snowfall />
+                <FlyingSanta />
+                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+                    <planeGeometry args={[60, 60]} /><meshStandardMaterial color="#e2e8f0" roughness={0.8} />
+                </mesh>
+            </Suspense>
+            <OrbitControls enableZoom={true} minPolarAngle={Math.PI/4} maxPolarAngle={Math.PI/2 - 0.1} minDistance={8} maxDistance={25} />
+        </Canvas>
+    </div>
+));
+
 const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
-    const containerRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const [activeTab, setActiveTab] = useState<'decor' | 'lights' | 'top'>('decor');
     const [selectedDecor, setSelectedDecor] = useState<string | null>(null);
     const [isProcessingPhoto, setIsProcessingPhoto] = useState(false);
@@ -538,7 +518,6 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
         top: { ru: 'ВЕРХУШКИ', en: 'TOPPERS' }
     };
 
-    // Persistence Load
     useEffect(() => {
         const savedData = localStorage.getItem('lyublupizza_tree_state');
         if (savedData) {
@@ -557,7 +536,6 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
         }
     }, []);
 
-    // Persistence Save
     useEffect(() => {
         const data = { items: placedItems, garland, topper };
         localStorage.setItem('lyublupizza_tree_state', JSON.stringify(data));
@@ -578,78 +556,35 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
             const img = new Image();
             img.src = canvas.toDataURL('image/jpeg', 0.95);
             img.onload = () => {
-                // Draw the photo area - Reduce height by 50px to create space
                 ctx.drawImage(img, 0, 0, img.width, img.height, 100, 100, width - 200, height - 480);
-                
-                // Gold Frame Border
                 ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 10; ctx.strokeRect(20, 20, width - 40, height - 40);
-                
-                // Main Greeting Line 1 - Moved down 30px
-                ctx.fillStyle = '#881337'; 
-                ctx.font = 'bold 42px serif'; 
-                ctx.textAlign = 'center';
+                ctx.fillStyle = '#881337'; ctx.font = 'bold 42px serif'; ctx.textAlign = 'center';
                 const greeting1 = language === 'ru' ? 'С Наступающим Новым Годом' : 'Merry Christmas';
                 ctx.fillText(greeting1, width / 2, height - 300);
-
-                // Main Greeting Line 2 - Moved down 30px
                 const greeting2 = language === 'ru' ? 'и Рождеством!' : '& Happy New Year!';
                 ctx.fillText(greeting2, width / 2, height - 250);
-                
-                // Subtitle 1 - Moved down 30px
-                ctx.fillStyle = '#b91c1c'; 
-                ctx.font = 'italic 30px serif';
+                ctx.fillStyle = '#b91c1c'; ctx.font = 'italic 30px serif';
                 const sub1 = language === 'ru' ? 'Всегда горячо, с любовью,' : 'Always hot, with love,';
                 ctx.fillText(sub1, width / 2, height - 200);
-
-                // Subtitle 2 - Moved down 30px
-                ctx.fillStyle = '#1f2937'; 
-                ctx.font = 'italic 45px serif';
+                ctx.fillStyle = '#1f2937'; ctx.font = 'italic 45px serif';
                 const sub2 = language === 'ru' ? 'Ваша любимая пиццерия' : 'Your favorite pizzeria';
                 ctx.fillText(sub2, width / 2, height - 140);
-
-                // --- BRANDED LOGO ---
                 const logoY = height - 60;
                 ctx.font = '900 70px sans-serif';
-                
-                const t1 = "Люблю";
-                const t2 = "Pizza";
-                const heartSize = 50;
-                const gap = 20;
-                
-                // Measure widths
-                const w1 = ctx.measureText(t1).width;
-                const w2 = ctx.measureText(t2).width;
-                const totalW = w1 + w2 + gap + heartSize;
-                
-                // Calculate precise start X to center the whole block
+                const t1 = "Люблю"; const t2 = "Pizza"; const heartSize = 50; const gap = 20;
+                const w1 = ctx.measureText(t1).width; const w2 = ctx.measureText(t2).width; const totalW = w1 + w2 + gap + heartSize;
                 let drawX = (width - totalW) / 2;
-                
-                ctx.textAlign = 'left'; // Switch for component drawing
-
-                // Draw "Люблю"
-                ctx.fillStyle = '#fbbf24'; // Yellow/Gold
-                ctx.fillText(t1, drawX, logoY);
-                
-                drawX += w1;
-                
-                // Draw "Pizza"
-                ctx.fillStyle = '#ef4444'; // Red
-                ctx.fillText(t2, drawX, logoY);
-                
-                drawX += w2 + gap;
-
-                // Draw Heart Icon
-                ctx.fillStyle = '#ef4444';
-                ctx.beginPath();
+                ctx.textAlign = 'left';
+                ctx.fillStyle = '#fbbf24'; ctx.fillText(t1, drawX, logoY); drawX += w1;
+                ctx.fillStyle = '#ef4444'; ctx.fillText(t2, drawX, logoY); drawX += w2 + gap;
+                ctx.fillStyle = '#ef4444'; ctx.beginPath();
                 const hx = drawX + heartSize/2, hy = logoY - 25, hsz = heartSize;
-                // Simple heart path centered at hx, hy
                 ctx.moveTo(hx, hy);
                 ctx.bezierCurveTo(hx, hy - hsz/2, hx - hsz, hy - hsz/2, hx - hsz, hy);
                 ctx.bezierCurveTo(hx - hsz, hy + hsz/2, hx, hy + hsz, hx, hy + hsz*1.5);
                 ctx.bezierCurveTo(hx, hy + hsz, hx + hsz, hy + hsz/2, hx + hsz, hy);
                 ctx.bezierCurveTo(hx + hsz, hy - hsz/2, hx, hy - hsz/2, hx, hy);
                 ctx.fill();
-
                 const link = document.createElement('a');
                 link.download = `PizzaTree_${Date.now()}.jpg`;
                 link.href = outputCanvas.toDataURL('image/jpeg', 0.9);
@@ -660,39 +595,19 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     };
 
     return (
-        <div ref={containerRef} className="w-full min-h-screen bg-[#0f172a] relative overflow-hidden">
-            <div className="absolute inset-0 z-0">
-                <Canvas shadows camera={{ position: [0, 5, 14], fov: 50 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
-                    <Suspense fallback={<LoadingSpinner />}>
-                        <ambientLight intensity={0.5} color="#3b82f6" />
-                        <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
-                        <spotLight position={[5, 10, 5]} angle={0.5} penumbra={1} intensity={2} color="white" castShadow target-position={[0, 4, 0]} />
-                        
-                        <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade speed={0.5} />
-                        <fog attach="fog" args={['#0f172a', 15, 45]} />
-                        
-                        <HeroTree selectedDecor={selectedDecor} placedItems={placedItems} onPlace={(pos: any, rot: any) => setPlacedItems(p => [...p, { id: Date.now(), typeId: selectedDecor, position: pos, quaternion: rot }])} garlandId={garland} topperId={topper} />
-                        
-                        {Array.from({ length: 5 }).map((_, i) => {
-                            const a = (i / 5) * Math.PI * 2;
-                            return <BrandedHouse key={i} position={[Math.sin(a)*16, 0, Math.cos(a)*16]} rotation={[0, a + Math.PI, 0]} />
-                        })}
-                        
-                        <BackgroundForest />
-                        <Snowfall />
-                        <FlyingSanta />
-                        
-                        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-                            <planeGeometry args={[60, 60]} /><meshStandardMaterial color="#e2e8f0" roughness={0.8} />
-                        </mesh>
-                    </Suspense>
-                    <OrbitControls enableZoom={true} minPolarAngle={Math.PI/4} maxPolarAngle={Math.PI/2 - 0.1} minDistance={8} maxDistance={25} />
-                </Canvas>
-            </div>
+        <div className="w-full min-h-screen bg-[#0f172a] relative overflow-hidden">
+            {/* 3D SCENE - MEMOIZED TO PREVENT RE-RENDERS ON UI CHANGE */}
+            <SeasonalScene 
+                selectedDecor={selectedDecor}
+                placedItems={placedItems}
+                onPlace={(pos: any, rot: any) => setPlacedItems(p => [...p, { id: Date.now(), typeId: selectedDecor, position: pos, quaternion: rot }])}
+                garland={garland}
+                topper={topper}
+                setContainerRef={(el: HTMLDivElement) => containerRef.current = el}
+            />
             
             <div className="absolute inset-0 z-10 pointer-events-none flex flex-col justify-between p-4">
                 <div className="pointer-events-auto flex flex-col items-start max-w-7xl mx-auto w-full gap-4">
-                    {/* Village Title Badge (Above Back Button) */}
                     <div className="bg-gradient-to-r from-indigo-600/90 to-purple-600/90 backdrop-blur-md p-3 rounded-xl border border-white/20 shadow-lg w-fit animate-in slide-in-from-left-10 duration-700">
                         <div className="flex items-center gap-2 mb-0.5">
                             <Snowflake className="w-3 h-3 text-cyan-300 animate-spin-slow" />
@@ -705,7 +620,6 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
                         </div>
                     </div>
 
-                    {/* Buttons Row */}
                     <div className="flex items-center justify-between w-full">
                         <button onClick={onBack} className="p-3 bg-black/40 rounded-full text-white border border-white/10 backdrop-blur-md hover:bg-black/60 transition-colors w-fit">
                             <ArrowLeft />

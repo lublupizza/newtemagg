@@ -1,5 +1,5 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { Language, PurchaseItem, InventoryItem, ShopItem } from '../types';
 import { Gift, Lock, ShoppingBag, Star, Sparkles, Heart, Timer, Filter, Zap, Box, Check, ArrowRight, Package, Calendar, Store, QrCode, ScanLine, Crown, Bot, Sword, Shield, Ticket, HelpCircle, Info, Snowflake, Infinity, Moon, Sun, Bug, Radio, HeartHandshake, TrendingUp, Flame, Rocket, Ghost } from 'lucide-react';
 
@@ -226,7 +226,29 @@ const getShopIcon = (iconType: string, size: string = "w-10 h-10") => {
 
 // --- COMPONENTS ---
 
-const RarityBadge = ({ rarity, language }: { rarity: Rarity, language: Language }) => {
+// Optimized Timer Component (Prevents parent re-render)
+const ShopTimer = React.memo(() => {
+    const [timeLeft, setTimeLeft] = useState('23:59:59');
+    
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const now = new Date();
+            const h = 23 - now.getHours();
+            const m = 59 - now.getMinutes();
+            const s = 59 - now.getSeconds();
+            setTimeLeft(`${h}:${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <div className="text-3xl font-mono font-bold text-blue-300">
+            {timeLeft}
+        </div>
+    );
+});
+
+const RarityBadge = React.memo(({ rarity, language }: { rarity: Rarity, language: Language }) => {
   const colors = RARITY_COLORS[rarity];
   const label = {
       common: language === 'ru' ? 'ОБЫЧНОЕ' : 'COMMON',
@@ -240,9 +262,9 @@ const RarityBadge = ({ rarity, language }: { rarity: Rarity, language: Language 
       {label}
     </div>
   );
-};
+});
 
-const PurchaseButton = ({ canAfford, cost, language, onClick, rarity }: { canAfford: boolean, cost: number, language: Language, onClick: () => void, rarity: Rarity }) => {
+const PurchaseButton = React.memo(({ canAfford, cost, language, onClick, rarity }: { canAfford: boolean, cost: number, language: Language, onClick: () => void, rarity: Rarity }) => {
     const [isClicked, setIsClicked] = useState(false);
 
     const handleClick = (e: React.MouseEvent) => {
@@ -276,9 +298,9 @@ const PurchaseButton = ({ canAfford, cost, language, onClick, rarity }: { canAff
             </div>
         </button>
     )
-}
+});
 
-const PhysicsCard = ({ item, userPoints, onBuy, language, index }: { item: ShopItem, userPoints: number, onBuy: any, language: Language, index: number }) => {
+const PhysicsCard = React.memo(({ item, userPoints, onBuy, language, index }: { item: ShopItem, userPoints: number, onBuy: any, language: Language, index: number }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [rotate, setRotate] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -372,7 +394,7 @@ const PhysicsCard = ({ item, userPoints, onBuy, language, index }: { item: ShopI
       </div>
     </div>
   );
-};
+});
 
 const getLootIcon = (image: string, size: string = "w-12 h-12") => {
     // SPECIAL SEASONAL
@@ -399,7 +421,7 @@ const getLootIcon = (image: string, size: string = "w-12 h-12") => {
     return <Package className={`${size} text-gray-400`} />;
 };
 
-const LootPreviewCard = ({ item, language, seasonal = false }: { item: LootItem, language: Language, seasonal?: boolean }) => {
+const LootPreviewCard = React.memo(({ item, language, seasonal = false }: { item: LootItem, language: Language, seasonal?: boolean }) => {
     const colors = RARITY_COLORS[item.rarity];
     return (
         <div className={`
@@ -421,9 +443,9 @@ const LootPreviewCard = ({ item, language, seasonal = false }: { item: LootItem,
             </div>
         </div>
     );
-}
+});
 
-const InventoryCard = ({ item, language, index }: { item: InventoryItem, language: Language, index: number }) => {
+const InventoryCard = React.memo(({ item, language, index }: { item: InventoryItem, language: Language, index: number }) => {
     const colors = RARITY_COLORS[item.rarity];
 
     return (
@@ -450,26 +472,13 @@ const InventoryCard = ({ item, language, index }: { item: InventoryItem, languag
             </div>
         </div>
     )
-}
+});
 
 const RewardsStore: React.FC<RewardsStoreProps> = ({ userPoints, language, onPurchase, onRedeem, history, inventory, shopItems }) => {
   const [filter, setFilter] = useState<Category>('all');
   const [viewMode, setViewMode] = useState<'market' | 'inventory' | 'codes'>('market');
-  const [timeLeft, setTimeLeft] = useState('23:59:59');
   const [redeemCode, setRedeemCode] = useState('');
   const [newItem, setNewItem] = useState<InventoryItem | null>(null);
-
-  // Mock Timer
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      const h = 23 - now.getHours();
-      const m = 59 - now.getMinutes();
-      const s = 59 - now.getSeconds();
-      setTimeLeft(`${h}:${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const handleRedeem = () => {
       if (!redeemCode) return;
@@ -483,7 +492,9 @@ const RewardsStore: React.FC<RewardsStoreProps> = ({ userPoints, language, onPur
       }
   };
 
-  const filteredItems = shopItems.filter(i => filter === 'all' || i.category === filter);
+  const filteredItems = useMemo(() => 
+    shopItems.filter(i => filter === 'all' || i.category === filter),
+  [shopItems, filter]);
 
   const t = {
     title: language === 'ru' ? 'КИБЕР МАРКЕТ' : 'CYBER MARKET',
@@ -564,9 +575,7 @@ const RewardsStore: React.FC<RewardsStoreProps> = ({ userPoints, language, onPur
                    <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1 flex justify-between items-center">
                       {t.refresh} <div className="p-1 bg-blue-500/20 rounded-full"><Timer className="w-3 h-3 text-blue-400" /></div>
                    </div>
-                   <div className="text-3xl font-mono font-bold text-blue-300">
-                      {timeLeft}
-                   </div>
+                   <ShopTimer />
                 </div>
              </div>
           </div>
