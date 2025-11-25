@@ -496,7 +496,7 @@ const LoadingSpinner = () => (
 // Memoized Scene Container to prevent re-renders from UI
 const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, setContainerRef }: any) => (
     <div ref={setContainerRef} className="absolute inset-0 z-0">
-        <Canvas shadows camera={{ position: [0, 5, 14], fov: 50 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
+        <Canvas shadows camera={{ position: [0, 6.5, 16], fov: 48 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
             <Suspense fallback={<LoadingSpinner />}>
                 <ambientLight intensity={0.5} color="#3b82f6" />
                 <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
@@ -515,7 +515,14 @@ const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland
                     <planeGeometry args={[60, 60]} /><meshStandardMaterial color="#e2e8f0" roughness={0.8} />
                 </mesh>
             </Suspense>
-            <OrbitControls enableZoom={true} minPolarAngle={Math.PI/4} maxPolarAngle={Math.PI/2 - 0.1} minDistance={8} maxDistance={25} />
+            <OrbitControls
+                enableZoom={true}
+                target={[0, 4.5, 0]}
+                minPolarAngle={Math.PI/4}
+                maxPolarAngle={Math.PI/2 - 0.1}
+                minDistance={8}
+                maxDistance={26}
+            />
         </Canvas>
     </div>
 ), (prev, next) => {

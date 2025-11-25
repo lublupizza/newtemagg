@@ -270,12 +270,15 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
 
   // Responsive stage sizing for mobile and desktop
   const isPortrait = viewport.height >= viewport.width;
-  const desktopStageHeight = Math.min(Math.max(viewport.height * (isPortrait ? 0.82 : 0.76), 520), 980);
-  const fullscreenHeight = Math.min(viewport.height - 16, 900);
+  const desktopIdleHeight = Math.max(Math.min(viewport.height * (isPortrait ? 0.84 : 0.8), 1200), 560);
+  const desktopPlayingHeight = Math.max(Math.min(viewport.height - 48, 1400), 720);
+  const desktopStageHeight = isPlaying ? desktopPlayingHeight : desktopIdleHeight;
+  const fullscreenHeight = Math.min(viewport.height - 12, 920);
   const stageHeight = fullscreenActive ? fullscreenHeight : desktopStageHeight;
+  const desktopWidth = isPlaying ? Math.min(viewport.width - 48, 1400) : Math.min(viewport.width, 1180);
   const stageWidth = fullscreenActive
     ? Math.min(viewport.width - 24, isPortrait ? viewport.width : viewport.height * 0.75)
-    : Math.min(viewport.width, 1100);
+    : desktopWidth;
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
@@ -342,7 +345,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
             ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
             : "relative w-full rounded-3xl border border-gray-800 bg-black z-10"
         }
-        style={{ height: stageHeight, maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 140px)' }}
+        style={{ height: stageHeight, maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)' }}
       >
          {/* Content Wrapper / Stage */}
          <div
