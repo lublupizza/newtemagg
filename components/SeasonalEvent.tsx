@@ -5,6 +5,7 @@ import { OrbitControls, Stars, Float, Tube, Text, Sparkles, Html, useTexture } f
 import * as THREE from 'three';
 import { Language } from '../types';
 import { ArrowLeft, Zap, Star, Trash2, Camera, Loader2, Snowflake, X } from 'lucide-react';
+import { useResponsiveGameViewport } from '../hooks/useResponsiveGameViewport';
 
 interface SeasonalEventProps {
   language: Language;
@@ -544,8 +545,41 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const [garland, setGarland] = useState<string | null>(null);
     const [topper, setTopper] = useState<string | null>(TOPPERS[0].id);
     const [infoDismissed, setInfoDismissed] = useState(false);
-    const [viewport, setViewport] = useState({ width: 1024, height: 768 });
-    const isMobile = viewport.width < 768;
+
+    const responsiveOptions = useMemo(() => ({
+        fillHeight: 0.96,
+        fillWidth: 0.92,
+        breakpoints: {
+            mobile: {
+                reservedTop: () => (infoDismissed ? 120 : 220),
+                reservedBottom: ({ viewport }) => Math.max(viewport.height * 0.24, 210) + 24,
+                minHeight: 520,
+                minWidth: 360,
+                maxHeightScale: 0.98,
+                horizontalPadding: 12,
+            },
+            tablet: {
+                reservedTop: 140,
+                reservedBottom: 64,
+                minHeight: 680,
+                minWidth: 760,
+                fillWidth: 0.9,
+                horizontalPadding: 24,
+            },
+            desktop: {
+                reservedTop: 140,
+                reservedBottom: 140,
+                minHeight: 820,
+                minWidth: 960,
+                maxHeightScale: 0.95,
+                fillHeight: 0.92,
+                fillWidth: 0.86,
+                horizontalPadding: 48,
+            },
+        },
+    }), [infoDismissed]);
+
+    const { stageHeight, stageWidth, viewport, isMobile, isDesktop } = useResponsiveGameViewport(responsiveOptions);
 
     // MOBILE OPTIMIZATION: Lock Scroll only on mobile, keep desktop scrollable for control panel
     useEffect(() => {
@@ -571,27 +605,6 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
             window.removeEventListener('touchmove', preventDefault);
         };
     }, [isMobile]);
-
-    useEffect(() => {
-        const readViewport = () => {
-            const vv = window.visualViewport;
-            return {
-                width: vv?.width ?? window.innerWidth,
-                height: vv?.height ?? window.innerHeight,
-            };
-        };
-
-        const handleResize = () => setViewport(readViewport());
-
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        window.visualViewport?.addEventListener('resize', handleResize);
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            window.visualViewport?.removeEventListener('resize', handleResize);
-        };
-    }, []);
 
     const TABS = {
         decor: { ru: 'ИГРУШКИ', en: 'DECOR' },
@@ -624,12 +637,8 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
 
     const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
     const controlsHeight = isMobile ? clamp(viewport.height * 0.24, 210, 280) : 0;
-    const headerHeight = isMobile ? 82 : 0;
-    const bannerHeight = isMobile && !infoDismissed ? clamp(viewport.height * 0.28, 140, 240) : 0;
     const desktopSceneHeight = clamp(viewport.height - 140, 820, 1700);
-    const sceneMinHeight = isMobile
-        ? clamp(viewport.height - (controlsHeight + headerHeight + bannerHeight + 18), 460, viewport.height * 0.95)
-        : desktopSceneHeight;
+    const sceneMinHeight = isMobile ? stageHeight : Math.max(stageHeight, desktopSceneHeight);
 
     const handleTakePhoto = () => {
         if (!containerRef.current) return;
@@ -731,7 +740,14 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
             <div className="relative flex-1 flex flex-col px-4 md:px-6 pb-6">
                 <div
                     className="relative flex-1 rounded-2xl overflow-hidden"
-                    style={{ minHeight: sceneMinHeight, height: sceneMinHeight, touchAction: 'none' }}
+                    style={{
+                        minHeight: sceneMinHeight,
+                        height: sceneMinHeight,
+                        maxWidth: isDesktop ? stageWidth : undefined,
+                        width: '100%',
+                        marginInline: 'auto',
+                        touchAction: 'none'
+                    }}
                 >
                     <SeasonalScene
                         selectedDecor={selectedDecor}

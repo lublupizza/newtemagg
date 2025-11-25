@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Gamepad2, PlayCircle, ChefHat, Grid3X3, ArrowUpCircle, Info, Keyboard, MousePointer, Hand, Rocket, Box, Flag, X, BrainCircuit, Disc, Puzzle, Ticket } from 'lucide-react';
 import { Language, GamesConfig, GameId } from '../types';
 import PizzaRunner from './PizzaRunner';
@@ -13,6 +13,7 @@ import WheelFortune from './WheelFortune';
 import PuzzleGame from './PuzzleGame';
 import ScratchGame from './ScratchGame';
 import DisabledGameScreen from './DisabledGameScreen';
+import { useResponsiveGameViewport } from '../hooks/useResponsiveGameViewport';
 
 interface GameZoneProps {
   onScoreUpdate: (points: number) => void;
@@ -216,35 +217,37 @@ const GameIntroCard = ({ config, language, onPlay }: { config: any, language: La
 const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatus }) => {
   const [selectedGame, setSelectedGame] = useState<GameType>('runner');
   const [showIntro, setShowIntro] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  const [viewport, setViewport] = useState({ width: 1024, height: 768 });
+  const viewportOptions = useMemo(() => ({
+    fillHeight: showIntro ? 0.9 : 0.97,
+    fillWidth: showIntro ? 0.88 : 0.95,
+    breakpoints: {
+      mobile: {
+        reservedTop: 210,
+        reservedBottom: 120,
+        minHeight: 480,
+        minWidth: 360,
+        horizontalPadding: 12,
+      },
+      tablet: {
+        reservedTop: 240,
+        reservedBottom: 90,
+        minHeight: 560,
+        minWidth: 620,
+        horizontalPadding: 24,
+      },
+      desktop: {
+        reservedTop: 240,
+        reservedBottom: 120,
+        minHeight: 720,
+        minWidth: 840,
+        fillHeight: showIntro ? 0.9 : 0.95,
+        fillWidth: showIntro ? 0.92 : 0.96,
+        horizontalPadding: 32,
+      },
+    },
+  }), [showIntro]);
 
-  // 1. Detect Mobile Device & Track Viewport with VisualViewport fallback
-  useEffect(() => {
-    const readViewport = () => {
-        const vv = window.visualViewport;
-        return {
-            width: vv?.width ?? window.innerWidth,
-            height: vv?.height ?? window.innerHeight,
-        };
-    };
-
-    const syncViewport = () => {
-        setIsMobile(window.matchMedia('(max-width: 768px)').matches);
-        setViewport(readViewport());
-    };
-
-    syncViewport();
-    window.addEventListener('resize', syncViewport);
-    window.addEventListener('orientationchange', syncViewport);
-    window.visualViewport?.addEventListener('resize', syncViewport);
-
-    return () => {
-        window.removeEventListener('resize', syncViewport);
-        window.removeEventListener('orientationchange', syncViewport);
-        window.visualViewport?.removeEventListener('resize', syncViewport);
-    };
-  }, []);
+  const { stageHeight, stageWidth, isMobile } = useResponsiveGameViewport(viewportOptions);
 
   const handleSelectGame = (game: GameType) => {
       if (selectedGame !== game) {
