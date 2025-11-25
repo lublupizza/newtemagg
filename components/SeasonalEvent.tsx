@@ -496,7 +496,12 @@ const LoadingSpinner = () => (
 // Memoized Scene Container to prevent re-renders from UI
 const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, setContainerRef }: any) => (
     <div ref={setContainerRef} className="absolute inset-0 z-0">
-        <Canvas shadows camera={{ position: [0, 9.5, 20], fov: 52 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
+        <Canvas
+            shadows
+            camera={{ position: [0, 11, 22], fov: 48 }}
+            dpr={[1, 1.5]}
+            gl={{ preserveDrawingBuffer: true }}
+        >
             <Suspense fallback={<LoadingSpinner />}>
                 <ambientLight intensity={0.5} color="#3b82f6" />
                 <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
@@ -517,10 +522,10 @@ const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland
             </Suspense>
             <OrbitControls
                 enableZoom={true}
-                target={[0, 6.2, 0]}
+                target={[0, 7.2, 0]}
                 minPolarAngle={Math.PI/4}
                 maxPolarAngle={Math.PI/2 - 0.08}
-                minDistance={9}
+                minDistance={10.5}
                 maxDistance={26}
             />
         </Canvas>
@@ -621,7 +626,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const controlsHeight = isMobile ? clamp(viewport.height * 0.24, 210, 280) : 0;
     const headerHeight = isMobile ? 82 : 0;
     const bannerHeight = isMobile && !infoDismissed ? clamp(viewport.height * 0.28, 140, 240) : 0;
-    const desktopSceneHeight = Math.min(Math.max(viewport.height * 0.9, 820), 1600);
+    const desktopSceneHeight = clamp(viewport.height - 140, 820, 1700);
     const sceneMinHeight = isMobile
         ? clamp(viewport.height - (controlsHeight + headerHeight + bannerHeight + 18), 460, viewport.height * 0.95)
         : desktopSceneHeight;
