@@ -380,7 +380,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white selection:bg-pink-500 selection:text-white">
+    <div className="min-h-screen bg-gray-900 text-white selection:bg-pink-500 selection:text-white flex flex-col">
       {((!isMaintenance && !isLaunchMode) || currentView === AppView.ADMIN) && (
           <Header currentView={currentView} onChangeView={setCurrentView} user={user} language={language} onToggleLanguage={toggleLanguage} onOpenAuth={() => setIsAuthOpen(true)} />
       )}
@@ -390,7 +390,9 @@ const App: React.FC = () => {
       {/* FORKI EASTER EGG MODAL */}
       {isForkiOpen && <ForkiEasterEgg onClose={() => setIsForkiOpen(false)} />}
 
-      <main className="fade-in-up">{renderView()}</main>
+      <main className="fade-in-up flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex flex-col">
+        {renderView()}
+      </main>
 
       {((!isMaintenance && !isLaunchMode) || currentView === AppView.ADMIN) && (
           <footer className="bg-gray-900 border-t border-gray-800 py-12 mt-24">
