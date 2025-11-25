@@ -235,26 +235,6 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
 const FitCameraToTree = ({ treeRef, controlsRef, isMobile, viewportKey }: { treeRef: React.RefObject<THREE.Group>; controlsRef: React.RefObject<any>; isMobile: boolean; viewportKey: string; }) => {
     const { camera, size } = useThree();
 
-    useEffect(() => {
-        if (!treeRef.current) return;
-
-        const box = new THREE.Box3().setFromObject(treeRef.current);
-        const sphere = box.getBoundingSphere(new THREE.Sphere());
-        const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
-        const margin = isMobile ? 1.25 : 1.12;
-        const distance = (sphere.radius * margin) / Math.sin(fov / 2);
-        const target = sphere.center.clone();
-        const yOffset = isMobile ? 0.6 : 1.2;
-
-        (camera as THREE.PerspectiveCamera).position.set(target.x, target.y + yOffset, distance);
-        (camera as THREE.PerspectiveCamera).lookAt(target);
-        controlsRef.current?.target.copy(target);
-        controlsRef.current?.update?.();
-    }, [camera, controlsRef, isMobile, size.height, size.width, treeRef, viewportKey]);
-
-    return null;
-};
-
 const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, isMobile }: any) => (
     <div className="absolute inset-0 z-0">
         <Canvas
@@ -316,7 +296,8 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const responsiveOptions = useMemo(() => ({
         breakpoints: { mobile: { minHeight: 600 }, desktop: { minHeight: 800 } }
     }), []);
-    const { isMobile } = useResponsiveGameViewport(responsiveOptions);
+    const { isMobile, viewport } = useResponsiveGameViewport(responsiveOptions);
+    const sceneKey = useMemo(() => `${viewport.width}x${viewport.height}-${isMobile ? 'm' : 'd'}`, [viewport.width, viewport.height, isMobile]);
 
     // If mobile, default to lights tab if decor is selected (since decor is removed)
     useEffect(() => {
@@ -342,19 +323,6 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     
     // Filter tabs for mobile (Remove Decor)
     const visibleTabs = isMobile ? ['lights', 'top'] : ['decor', 'lights', 'top'];
-
-    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
-    const controlsHeight = isMobile ? clamp(viewport.height * 0.24, 210, 280) : 0;
-    const desktopSceneHeight = clamp(viewport.height - 140, 820, 1700);
-    const sceneMaxHeight = isMobile
-        ? Math.max(viewport.height - controlsHeight - 24, 480)
-        : Math.max(viewport.height - 120, 720);
-    const sceneMinHeight = isMobile ? stageHeight : Math.max(stageHeight, desktopSceneHeight);
-    const sceneHeight = Math.min(sceneMinHeight, sceneMaxHeight);
-    const sceneScrollable = sceneMinHeight > sceneMaxHeight;
-    const sceneWidth = isDesktop
-        ? Math.min(stageWidth, viewport.width - 120)
-        : Math.min(stageWidth, viewport.width - 24);
 
     const handleTakePhoto = () => {
         if (!containerRef.current) return;
@@ -427,6 +395,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
             {/* 3D SCENE LAYER */}
             <div ref={containerRef} className="absolute inset-0 z-0">
                 <SeasonalScene
+                    key={sceneKey}
                     selectedDecor={!isMobile && activeTab === 'decor' ? selectedDecor : null}
                     placedItems={placedItems}
                     onPlace={(pos: any, rot: any) => setPlacedItems(p => [...p, { id: Date.now(), typeId: selectedDecor, position: pos, quaternion: rot }])}
