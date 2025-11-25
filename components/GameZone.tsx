@@ -305,18 +305,18 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     overflow: 'hidden'
   }), [cappedStageHeight, fullscreenActive, heightCeiling, stageMaxWidth]);
 
-  const stageFrameStyle = useMemo(() => ({
-    paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
-    paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
-    touchAction: fullscreenActive ? 'none' : 'manipulation',
-    maxWidth: stageMaxWidth,
-    width: '100%',
-    height: cappedStageHeight,
-    marginInline: 'auto',
-    borderRadius: fullscreenActive ? '18px' : undefined,
-    overflow: 'hidden',
-    boxSizing: 'border-box'
-  }), [cappedStageHeight, fullscreenActive, stageMaxWidth]);
+    const stageFrameStyle = useMemo(() => ({
+      paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
+      paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
+      touchAction: fullscreenActive ? 'none' : 'manipulation',
+      maxWidth: stageMaxWidth,
+      width: '100%',
+      height: cappedStageHeight,
+      marginInline: 'auto',
+      borderRadius: fullscreenActive ? '18px' : undefined,
+      overflow: 'hidden',
+      boxSizing: 'border-box' as const
+    }), [cappedStageHeight, fullscreenActive, stageMaxWidth]);
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {

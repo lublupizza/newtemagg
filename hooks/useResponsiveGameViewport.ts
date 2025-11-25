@@ -32,7 +32,9 @@ const resolve = (
   return fallback;
 };
 
-const defaultOptions: StageSizingOptions = {
+type ResolvedStageSizing = Required<Record<keyof StageSizingOptions, number>>;
+
+const defaultOptions: ResolvedStageSizing = {
   reservedTop: 0,
   reservedBottom: 0,
   minHeight: 420,
@@ -87,15 +89,15 @@ export const useResponsiveGameViewport = (options: ResponsiveOptions = {}) => {
 
   const ctx = { viewport, screen } as const;
 
-  const horizontalPadding = resolve(mergedOptions.horizontalPadding, ctx, 0);
-  const minHeight = resolve(mergedOptions.minHeight, ctx, defaultOptions.minHeight!);
-  const minWidth = resolve(mergedOptions.minWidth, ctx, defaultOptions.minWidth!);
-  const reservedTop = resolve(mergedOptions.reservedTop, ctx, 0);
-  const reservedBottom = resolve(mergedOptions.reservedBottom, ctx, 0);
-  const fillHeight = resolve(mergedOptions.fillHeight, ctx, defaultOptions.fillHeight!);
-  const fillWidth = resolve(mergedOptions.fillWidth, ctx, defaultOptions.fillWidth!);
-  const maxHeightScale = resolve(mergedOptions.maxHeightScale, ctx, defaultOptions.maxHeightScale!);
-  const maxWidthScale = resolve(mergedOptions.maxWidthScale, ctx, defaultOptions.maxWidthScale!);
+  const horizontalPadding = resolve(mergedOptions.horizontalPadding, ctx, defaultOptions.horizontalPadding);
+  const minHeight = resolve(mergedOptions.minHeight, ctx, defaultOptions.minHeight);
+  const minWidth = resolve(mergedOptions.minWidth, ctx, defaultOptions.minWidth);
+  const reservedTop = resolve(mergedOptions.reservedTop, ctx, defaultOptions.reservedTop);
+  const reservedBottom = resolve(mergedOptions.reservedBottom, ctx, defaultOptions.reservedBottom);
+  const fillHeight = resolve(mergedOptions.fillHeight, ctx, defaultOptions.fillHeight);
+  const fillWidth = resolve(mergedOptions.fillWidth, ctx, defaultOptions.fillWidth);
+  const maxHeightScale = resolve(mergedOptions.maxHeightScale, ctx, defaultOptions.maxHeightScale);
+  const maxWidthScale = resolve(mergedOptions.maxWidthScale, ctx, defaultOptions.maxWidthScale);
 
   const availableHeight = Math.max(viewport.height - reservedTop - reservedBottom, minHeight);
 

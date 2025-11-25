@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo, Suspense, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars, Text, Sparkles } from '@react-three/drei';
+import { OrbitControls, Stars, Text, Sparkles, Tube } from '@react-three/drei';
 import * as THREE from 'three';
 import { Language } from '../types';
 import { ArrowLeft, Zap, Star, Trash2, Camera, Loader2 } from 'lucide-react';
@@ -155,7 +155,7 @@ const TreeGarland = React.memo(({ typeId }: { typeId: string | null }) => {
     return (<group><Tube args={[curve, 64, 0.03, 6, false]}><meshStandardMaterial color="#111" /></Tube>{Array.from({ length: 80 }).map((_, i) => { const t = i / 80; const pos = curve.getPoint(t); const color = def.colors[i % def.colors.length]; return (<mesh key={i} position={pos}><sphereGeometry args={[0.07]} /><meshBasicMaterial color={color} /><pointLight distance={1.5} intensity={def.intensity} color={color} /></mesh>) })}</group>);
 });
 
-const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, topperId, isMobile }: any) => {
+const HeroTreeComponent = ({ selectedDecor, placedItems, onPlace, garlandId, topperId, isMobile }: any) => {
     const assets = useAssets();
     const ghostRef = useRef<THREE.Group>(null);
 
@@ -166,7 +166,7 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
         const treeTopY = 8.0; const treeBottomY = 1.0; const maxRadius = 3.2; const point = e.point;
         const y = Math.max(treeBottomY, Math.min(treeTopY, point.y));
         const progress = (treeTopY - y) / (treeTopY - treeBottomY);
-        const r = maxRadius * progress; 
+        const r = maxRadius * progress;
         const angle = Math.atan2(point.z, point.x);
         const x = Math.cos(angle) * r; const z = Math.sin(angle) * r;
         const pos = new THREE.Vector3(x, y, z);
@@ -175,7 +175,7 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
     };
 
     const handleClick = (e: any) => {
-        if (isMobile) return; 
+        if (isMobile) return;
         if (!selectedDecor || !ghostRef.current || !ghostRef.current.visible) return;
         e.stopPropagation();
         onPlace(ghostRef.current.position.clone(), ghostRef.current.quaternion.clone());
@@ -196,7 +196,7 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
                 {[2, 4, 5.8, 7.2].map((y, i) => {
                     const s = [3.2, 2.6, 1.8, 1][i];
                     const h = [3.5, 3, 2.5, 2][i];
-                    return <mesh key={i} position={[0, y, 0]}><coneGeometry args={[s, h, 16]} /><meshStandardMaterial color="#10b981" roughness={0.8} /></mesh>
+                    return <mesh key={i} position={[0, y, 0]}><coneGeometry args={[s, h, 16]} /><meshStandardMaterial color="#10b981" roughness={0.8} /></mesh>;
                 })}
             </group>
 
@@ -213,27 +213,26 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
             {placedItems.map((item: any) => {
                 const def = ORNAMENTS.find(o => o.id === item.typeId);
                 if (!def) return null;
-                return <group key={item.id} position={item.position} quaternion={item.quaternion}><DetailedOrnament type={def.type} color={def.color} assets={assets} /></group>
+                return <group key={item.id} position={item.position} quaternion={item.quaternion}><DetailedOrnament type={def.type} color={def.color} assets={assets} /></group>;
             })}
 
             {/* Desktop Ghost */}
             {!isMobile && (
                 <group ref={ghostRef} visible={false}>
                     {selectedDecor && (
-                        <DetailedOrnament 
-                            type={ORNAMENTS.find(o => o.id === selectedDecor)?.type || 'sphere'} 
-                            color={ORNAMENTS.find(o => o.id === selectedDecor)?.color || 'white'} 
-                            assets={assets} 
+                        <DetailedOrnament
+                            type={ORNAMENTS.find(o => o.id === selectedDecor)?.type || 'sphere'}
+                            color={ORNAMENTS.find(o => o.id === selectedDecor)?.color || 'white'}
+                            assets={assets}
                         />
                     )}
                 </group>
             )}
         </group>
     );
-}));
+};
 
-const FitCameraToTree = ({ treeRef, controlsRef, isMobile, viewportKey }: { treeRef: React.RefObject<THREE.Group>; controlsRef: React.RefObject<any>; isMobile: boolean; viewportKey: string; }) => {
-    const { camera, size } = useThree();
+const HeroTree = React.memo(HeroTreeComponent);
 
 const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, isMobile }: any) => (
     <div className="absolute inset-0 z-0">
