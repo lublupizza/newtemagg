@@ -230,7 +230,10 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
             )}
         </group>
     );
-});
+}));
+
+const FitCameraToTree = ({ treeRef, controlsRef, isMobile, viewportKey }: { treeRef: React.RefObject<THREE.Group>; controlsRef: React.RefObject<any>; isMobile: boolean; viewportKey: string; }) => {
+    const { camera, size } = useThree();
 
 const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, isMobile }: any) => (
     <div className="absolute inset-0 z-0">
