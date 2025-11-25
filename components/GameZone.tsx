@@ -271,6 +271,20 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   // Fullscreen is only active when playing AND on mobile
   const fullscreenActive = isPlaying && isMobile;
 
+  // Responsive stage sizing for mobile and desktop
+  const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+  const isPortrait = viewport.height >= viewport.width;
+  const safeGap = isMobile ? 8 : 18;
+  const availableHeight = Math.max(viewport.height - safeGap * 2, 520);
+  const baseHeight = availableHeight * (isPlaying ? (isMobile ? 0.98 : 0.94) : (isMobile ? 0.9 : isPortrait ? 0.9 : 0.86));
+  const stageHeight = clamp(baseHeight, isMobile ? 460 : 640, Math.max(availableHeight, viewport.height * 0.98));
+
+  const availableWidth = Math.max(viewport.width - (isMobile ? 12 : 64), 360);
+  const desktopWidthTarget = isPlaying ? availableWidth : viewport.width * 0.82;
+  const stageWidth = fullscreenActive
+    ? clamp(isPortrait ? viewport.width - 12 : viewport.height * 0.8, 340, availableWidth)
+    : clamp(desktopWidthTarget, isMobile ? 360 : 820, Math.max(availableWidth, viewport.width * 0.96));
+
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
     if (fullscreenActive) {
