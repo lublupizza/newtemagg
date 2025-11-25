@@ -533,6 +533,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const [topper, setTopper] = useState<string | null>(TOPPERS[0].id);
     const [infoDismissed, setInfoDismissed] = useState(false);
     const [viewport, setViewport] = useState({ width: 1024, height: 768 });
+    const isMobile = viewport.width < 768;
 
     // MOBILE OPTIMIZATION: Lock Scroll only on mobile, keep desktop scrollable for control panel
     useEffect(() => {
@@ -558,27 +559,6 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
             window.removeEventListener('touchmove', preventDefault);
         };
     }, [isMobile]);
-
-    useEffect(() => {
-        const readViewport = () => {
-            const vv = window.visualViewport;
-            return {
-                width: vv?.width ?? window.innerWidth,
-                height: vv?.height ?? window.innerHeight,
-            };
-        };
-
-        const handleResize = () => setViewport(readViewport());
-
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        window.visualViewport?.addEventListener('resize', handleResize);
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            window.visualViewport?.removeEventListener('resize', handleResize);
-        };
-    }, []);
 
     useEffect(() => {
         const readViewport = () => {
@@ -630,8 +610,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
         localStorage.setItem('lyublupizza_tree_state', JSON.stringify(data));
     }, [placedItems, garland, topper]);
 
-    const isMobile = viewport.width < 768;
-    const controlsHeight = isMobile ? 210 : 0;
+    const controlsHeight = isMobile ? 230 : 0;
     const headerHeight = isMobile ? 82 : 0;
     const bannerHeight = isMobile && !infoDismissed ? 170 : 0;
     const sceneMinHeight = isMobile
@@ -694,7 +673,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     return (
         <div
             className="relative flex flex-col min-h-screen bg-[#0f172a] text-white"
-            style={{ paddingBottom: isMobile ? controlsHeight + 16 : 0, touchAction: isMobile ? 'manipulation' : 'auto' }}
+            style={{ paddingBottom: isMobile ? controlsHeight + 16 : 32, touchAction: isMobile ? 'manipulation' : 'auto' }}
         >
             <div
                 className="flex flex-col gap-3 px-4 pt-4 pb-2 md:px-6 md:pt-6"
@@ -750,8 +729,8 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
                     />
                 </div>
 
-                <div className="hidden md:block mt-4 pointer-events-auto">
-                    <div className="w-full max-w-3xl bg-black/70 backdrop-blur-xl border border-white/10 rounded-3xl mx-auto p-4 shadow-2xl">
+                <div className="hidden md:block mt-4 pointer-events-auto md:sticky md:bottom-4 md:z-20">
+                    <div className="w-full max-w-4xl bg-black/80 backdrop-blur-xl border border-white/10 rounded-3xl mx-auto p-4 shadow-2xl">
                         <div className="flex justify-center gap-2 mb-4 overflow-x-auto touch-pan-x px-1">
                             {['decor', 'lights', 'top'].map((tab) => (
                                 <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-4 py-2 rounded-full text-xs font-bold uppercase transition-all flex-shrink-0 ${activeTab === tab ? 'bg-pink-600 text-white' : 'bg-gray-800 text-gray-400'}`}>
@@ -840,11 +819,11 @@ const MobileDecorationControls = ({
 }) => {
     return (
         <div
-            className="fixed inset-x-0 bottom-0 z-30 md:hidden"
+            className="fixed inset-x-0 bottom-0 z-40 md:hidden pointer-events-auto"
             style={{ paddingBottom: `max(env(safe-area-inset-bottom), 14px)` }}
         >
             <div
-                className="bg-black/85 backdrop-blur-xl border-t border-white/10 rounded-t-3xl shadow-2xl px-4 pb-3"
+                className="bg-black/90 backdrop-blur-xl border-t border-white/10 rounded-t-3xl shadow-2xl px-4 pb-3"
                 style={{ minHeight: controlsHeight }}
             >
                 <div className="flex justify-center gap-2 mb-3 overflow-x-auto touch-pan-x px-1">
