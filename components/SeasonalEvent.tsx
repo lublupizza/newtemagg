@@ -496,7 +496,7 @@ const LoadingSpinner = () => (
 // Memoized Scene Container to prevent re-renders from UI
 const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, setContainerRef }: any) => (
     <div ref={setContainerRef} className="absolute inset-0 z-0">
-        <Canvas shadows camera={{ position: [0, 6.5, 16], fov: 48 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
+        <Canvas shadows camera={{ position: [0, 7.5, 17.5], fov: 46 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
             <Suspense fallback={<LoadingSpinner />}>
                 <ambientLight intensity={0.5} color="#3b82f6" />
                 <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
@@ -517,11 +517,11 @@ const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland
             </Suspense>
             <OrbitControls
                 enableZoom={true}
-                target={[0, 4.5, 0]}
+                target={[0, 5.5, 0]}
                 minPolarAngle={Math.PI/4}
-                maxPolarAngle={Math.PI/2 - 0.1}
+                maxPolarAngle={Math.PI/2 - 0.08}
                 minDistance={8}
-                maxDistance={26}
+                maxDistance={28}
             />
         </Canvas>
     </div>
@@ -617,12 +617,13 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
         localStorage.setItem('lyublupizza_tree_state', JSON.stringify(data));
     }, [placedItems, garland, topper]);
 
-    const controlsHeight = isMobile ? 230 : 0;
+    const controlsHeight = isMobile ? 210 : 0;
     const headerHeight = isMobile ? 82 : 0;
     const bannerHeight = isMobile && !infoDismissed ? 170 : 0;
+    const desktopSceneHeight = Math.min(Math.max(viewport.height * 0.82, 780), 1180);
     const sceneMinHeight = isMobile
-        ? Math.max(viewport.height - (controlsHeight + headerHeight + bannerHeight + 24), 320)
-        : undefined;
+        ? Math.max(viewport.height - (controlsHeight + headerHeight + bannerHeight + 24), 360)
+        : desktopSceneHeight;
 
     const handleTakePhoto = () => {
         if (!containerRef.current) return;
@@ -680,7 +681,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     return (
         <div
             className="relative flex flex-col min-h-screen bg-[#0f172a] text-white"
-            style={{ paddingBottom: isMobile ? controlsHeight + 16 : 32, touchAction: isMobile ? 'manipulation' : 'auto' }}
+            style={{ paddingBottom: isMobile ? controlsHeight + 16 : 120, touchAction: isMobile ? 'manipulation' : 'auto' }}
         >
             <div
                 className="flex flex-col gap-3 px-4 pt-4 pb-2 md:px-6 md:pt-6"
@@ -721,10 +722,10 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
                 )}
             </div>
 
-            <div className="relative flex-1 flex flex-col px-4 md:px-6 pb-4">
+            <div className="relative flex-1 flex flex-col px-4 md:px-6 pb-6">
                 <div
                     className="relative flex-1 rounded-2xl overflow-hidden"
-                    style={{ minHeight: sceneMinHeight, touchAction: 'none' }}
+                    style={{ minHeight: sceneMinHeight, height: sceneMinHeight, touchAction: 'none' }}
                 >
                     <SeasonalScene
                         selectedDecor={selectedDecor}
@@ -736,8 +737,8 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
                     />
                 </div>
 
-                <div className="hidden md:block mt-4 pointer-events-auto md:sticky md:bottom-4 md:z-20">
-                    <div className="w-full max-w-4xl bg-black/80 backdrop-blur-xl border border-white/10 rounded-3xl mx-auto p-4 shadow-2xl">
+                <div className="hidden md:block mt-6 pointer-events-auto md:self-center md:max-w-5xl w-full">
+                    <div className="w-full bg-black/85 backdrop-blur-xl border border-white/10 rounded-3xl mx-auto p-4 shadow-2xl">
                         <div className="flex justify-center gap-2 mb-4 overflow-x-auto touch-pan-x px-1">
                             {['decor', 'lights', 'top'].map((tab) => (
                                 <button key={tab} onClick={() => setActiveTab(tab as any)} className={`px-4 py-2 rounded-full text-xs font-bold uppercase transition-all flex-shrink-0 ${activeTab === tab ? 'bg-pink-600 text-white' : 'bg-gray-800 text-gray-400'}`}>
