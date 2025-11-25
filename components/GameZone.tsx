@@ -247,6 +247,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     },
   }), [showIntro]);
 
+  // Single responsive stage sizing source
   const { stageHeight, stageWidth, isMobile } = useResponsiveGameViewport(viewportOptions);
 
   const handleSelectGame = (game: GameType) => {
@@ -271,19 +272,22 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   // Fullscreen is only active when playing AND on mobile
   const fullscreenActive = isPlaying && isMobile;
 
-  // Responsive stage sizing for mobile and desktop
-  const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
-  const isPortrait = viewport.height >= viewport.width;
-  const safeGap = isMobile ? 8 : 18;
-  const availableHeight = Math.max(viewport.height - safeGap * 2, 520);
-  const baseHeight = availableHeight * (isPlaying ? (isMobile ? 0.98 : 0.94) : (isMobile ? 0.9 : isPortrait ? 0.9 : 0.86));
-  const stageHeight = clamp(baseHeight, isMobile ? 460 : 640, Math.max(availableHeight, viewport.height * 0.98));
+  const stageContainerStyle = useMemo(() => ({
+    height: stageHeight,
+    maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)',
+    maxWidth: fullscreenActive ? '100%' : stageWidth,
+    marginInline: 'auto'
+  }), [fullscreenActive, stageHeight, stageWidth]);
 
-  const availableWidth = Math.max(viewport.width - (isMobile ? 12 : 64), 360);
-  const desktopWidthTarget = isPlaying ? availableWidth : viewport.width * 0.82;
-  const stageWidth = fullscreenActive
-    ? clamp(isPortrait ? viewport.width - 12 : viewport.height * 0.8, 340, availableWidth)
-    : clamp(desktopWidthTarget, isMobile ? 360 : 820, Math.max(availableWidth, viewport.width * 0.96));
+  const stageFrameStyle = useMemo(() => ({
+    paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
+    paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
+    touchAction: fullscreenActive ? 'none' : 'manipulation',
+    maxWidth: stageWidth,
+    height: stageHeight,
+    marginInline: 'auto',
+    borderRadius: fullscreenActive ? '18px' : undefined
+  }), [fullscreenActive, stageHeight, stageWidth]);
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
@@ -350,12 +354,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
             ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
             : "relative w-full rounded-3xl border border-gray-800 bg-black z-10"
         }
-        style={{
-            height: stageHeight,
-            maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)',
-            maxWidth: fullscreenActive ? '100%' : stageWidth,
-            marginInline: 'auto'
-        }}
+        style={stageContainerStyle}
       >
          {/* Content Wrapper / Stage */}
          <div
@@ -363,15 +362,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
                 relative overflow-hidden touch-none select-none w-full h-full
                 ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''}
             `}
-            style={{
-                paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
-                paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
-                touchAction: fullscreenActive ? 'none' : 'manipulation',
-                maxWidth: stageWidth,
-                height: stageHeight,
-                marginInline: 'auto',
-                borderRadius: fullscreenActive ? '18px' : undefined
-            }}
+            style={stageFrameStyle}
          >
              {!isGameEnabled && (
                  <DisabledGameScreen title={GAMES_CONFIG[selectedGame].title[language]} language={language} />
