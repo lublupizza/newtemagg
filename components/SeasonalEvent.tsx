@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useMemo, Suspense, useEffect } from 'react';
-import { Canvas, useFrame, ThreeEvent } from '@react-three/fiber';
+import { Canvas, useFrame, ThreeEvent, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars, Float, Tube, Text, Sparkles, Html, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { Language } from '../types';
@@ -400,10 +400,11 @@ const TreeGarland = React.memo(({ typeId }: { typeId: string | null }) => {
 });
 
 // MOBILE OPTIMIZATION: Use Ref for ghost object to prevent react re-renders on pointer move
-const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, topperId }: any) => {
+const HeroTree = React.memo(React.forwardRef<THREE.Group, any>(({ selectedDecor, placedItems, onPlace, garlandId, topperId }, forwardRef) => {
     const assets = useAssets();
     const ghostRef = useRef<THREE.Group>(null);
     const currentGhostData = useRef<{pos: THREE.Vector3, rot: THREE.Quaternion} | null>(null);
+    const treeRef = useRef<THREE.Group>(null);
 
     const handlePointerMove = (e: ThreeEvent<PointerEvent>) => {
         if (!selectedDecor) {
@@ -449,8 +450,17 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
         currentGhostData.current = null;
     }
 
+    useEffect(() => {
+        if (!forwardRef) return;
+        if (typeof forwardRef === 'function') {
+            forwardRef(treeRef.current);
+        } else {
+            (forwardRef as React.MutableRefObject<THREE.Group | null>).current = treeRef.current;
+        }
+    }, [forwardRef]);
+
     return (
-        <group>
+        <group ref={treeRef}>
             {/* Invisible Collision Mesh for Performance */}
             <mesh visible={false} position={[0, 4.5, 0]} onPointerMove={handlePointerMove} onClick={handleClick} onPointerOut={handlePointerOut}>
                 <cylinderGeometry args={[0, 3.5, 9, 12]} />
@@ -488,52 +498,80 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
             </group>
         </group>
     );
-});
+}));
+
+const FitCameraToTree = ({ treeRef, controlsRef, isMobile, viewportKey }: { treeRef: React.RefObject<THREE.Group>; controlsRef: React.RefObject<any>; isMobile: boolean; viewportKey: string; }) => {
+    const { camera, size } = useThree();
+
+    useEffect(() => {
+        if (!treeRef.current) return;
+
+        const box = new THREE.Box3().setFromObject(treeRef.current);
+        const sphere = box.getBoundingSphere(new THREE.Sphere());
+        const fov = (camera as THREE.PerspectiveCamera).fov * (Math.PI / 180);
+        const margin = isMobile ? 1.25 : 1.12;
+        const distance = (sphere.radius * margin) / Math.sin(fov / 2);
+        const target = sphere.center.clone();
+        const yOffset = isMobile ? 0.6 : 1.2;
+
+        (camera as THREE.PerspectiveCamera).position.set(target.x, target.y + yOffset, distance);
+        (camera as THREE.PerspectiveCamera).lookAt(target);
+        controlsRef.current?.target.copy(target);
+        controlsRef.current?.update?.();
+    }, [camera, controlsRef, isMobile, size.height, size.width, treeRef, viewportKey]);
+
+    return null;
+};
 
 const LoadingSpinner = () => (
     <group rotation={[0,0,0]}><mesh><torusGeometry args={[2, 0.2, 16, 100]} /><meshStandardMaterial color="white" /></mesh></group>
 );
 
 // Memoized Scene Container to prevent re-renders from UI
-const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, setContainerRef }: any) => (
-    <div ref={setContainerRef} className="absolute inset-0 z-0">
-        <Canvas
-            shadows
-            camera={{ position: [0, 11, 22], fov: 48 }}
-            dpr={[1, 1.5]}
-            gl={{ preserveDrawingBuffer: true }}
-        >
-            <Suspense fallback={<LoadingSpinner />}>
-                <ambientLight intensity={0.5} color="#3b82f6" />
-                <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
-                <spotLight position={[5, 10, 5]} angle={0.5} penumbra={1} intensity={2} color="white" castShadow target-position={[0, 4, 0]} />
-                <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade speed={0.5} />
-                <fog attach="fog" args={['#0f172a', 15, 45]} />
-                <HeroTree selectedDecor={selectedDecor} placedItems={placedItems} onPlace={onPlace} garlandId={garland} topperId={topper} />
-                {Array.from({ length: 5 }).map((_, i) => {
-                    const a = (i / 5) * Math.PI * 2;
-                    return <BrandedHouse key={i} position={[Math.sin(a)*16, 0, Math.cos(a)*16]} rotation={[0, a + Math.PI, 0]} />
-                })}
-                <BackgroundForest />
-                <Snowfall />
-                <FlyingSanta />
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-                    <planeGeometry args={[60, 60]} /><meshStandardMaterial color="#e2e8f0" roughness={0.8} />
-                </mesh>
-            </Suspense>
-            <OrbitControls
-                enableZoom={true}
-                target={[0, 7.2, 0]}
-                minPolarAngle={Math.PI/4}
-                maxPolarAngle={Math.PI/2 - 0.08}
-                minDistance={10.5}
-                maxDistance={26}
-            />
-        </Canvas>
-    </div>
-), (prev, next) => {
-    // Only re-render canvas if 3D props change, ignore simple UI state like "activeTab"
-    return prev.garland === next.garland && prev.topper === next.topper && prev.placedItems === next.placedItems && prev.selectedDecor === next.selectedDecor;
+const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, setContainerRef, cameraConfig, isMobile, viewportKey }: any) => {
+    const treeRef = useRef<THREE.Group>(null);
+    const controlsRef = useRef<any>(null);
+
+    return (
+        <div ref={setContainerRef} className="absolute inset-0 z-0">
+            <Canvas
+                key={viewportKey}
+                shadows
+                camera={cameraConfig}
+                dpr={[1, 1.5]}
+                gl={{ preserveDrawingBuffer: true }}
+            >
+                <Suspense fallback={<LoadingSpinner />}>
+                    <ambientLight intensity={0.5} color="#3b82f6" />
+                    <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
+                    <spotLight position={[5, 10, 5]} angle={0.5} penumbra={1} intensity={2} color="white" castShadow target-position={[0, 4, 0]} />
+                    <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade speed={0.5} />
+                    <fog attach="fog" args={['#0f172a', 15, 45]} />
+                    <FitCameraToTree treeRef={treeRef} controlsRef={controlsRef} isMobile={isMobile} viewportKey={viewportKey} />
+                    <HeroTree ref={treeRef} selectedDecor={selectedDecor} placedItems={placedItems} onPlace={onPlace} garlandId={garland} topperId={topper} />
+                    {Array.from({ length: 5 }).map((_, i) => {
+                        const a = (i / 5) * Math.PI * 2;
+                        return <BrandedHouse key={i} position={[Math.sin(a)*16, 0, Math.cos(a)*16]} rotation={[0, a + Math.PI, 0]} />
+                    })}
+                    <BackgroundForest />
+                    <Snowfall />
+                    <FlyingSanta />
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+                        <planeGeometry args={[60, 60]} /><meshStandardMaterial color="#e2e8f0" roughness={0.8} />
+                    </mesh>
+                </Suspense>
+                <OrbitControls
+                    ref={controlsRef}
+                    enableZoom={true}
+                    target={[0, 7.4, 0]}
+                    minPolarAngle={Math.PI/4}
+                    maxPolarAngle={Math.PI/2 - 0.08}
+                    minDistance={12}
+                    maxDistance={26}
+                />
+            </Canvas>
+        </div>
+    );
 });
 
 const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
@@ -584,6 +622,17 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const viewportKey = useMemo(
         () => `${viewport.width}x${viewport.height}-${infoDismissed ? 'info' : 'full'}`,
         [infoDismissed, viewport.height, viewport.width]
+    );
+
+    const [sceneRevision, setSceneRevision] = useState(0);
+
+    useEffect(() => {
+        setSceneRevision((v) => v + 1);
+    }, [viewportKey]);
+
+    const cameraConfig = useMemo(
+        () => ({ position: [0, isMobile ? 9.5 : 11.5, isMobile ? 20 : 23], fov: isMobile ? 56 : 50 }),
+        [isMobile, viewportKey]
     );
 
     // MOBILE OPTIMIZATION: Lock Scroll only on mobile, keep desktop scrollable for control panel
@@ -649,6 +698,9 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const sceneMinHeight = isMobile ? stageHeight : Math.max(stageHeight, desktopSceneHeight);
     const sceneHeight = Math.min(sceneMinHeight, sceneMaxHeight);
     const sceneScrollable = sceneMinHeight > sceneMaxHeight;
+    const sceneWidth = isDesktop
+        ? Math.min(stageWidth, viewport.width - 120)
+        : Math.min(stageWidth, viewport.width - 24);
 
     const handleTakePhoto = () => {
         if (!containerRef.current) return;
@@ -755,7 +807,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
                         minHeight: Math.min(sceneMinHeight, sceneMaxHeight),
                         height: sceneHeight,
                         maxHeight: sceneMaxHeight,
-                        maxWidth: isDesktop ? Math.min(stageWidth, viewport.width - 120) : '100%',
+                        maxWidth: sceneWidth,
                         width: '100%',
                         marginInline: 'auto',
                         overflow: sceneScrollable ? 'auto' : 'hidden',
@@ -763,12 +815,16 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
                     }}
                 >
                     <SeasonalScene
+                        key={sceneRevision}
                         selectedDecor={selectedDecor}
                         placedItems={placedItems}
                         onPlace={(pos: any, rot: any) => setPlacedItems(p => [...p, { id: Date.now(), typeId: selectedDecor, position: pos, quaternion: rot }])}
                         garland={garland}
                         topper={topper}
                         setContainerRef={(el: HTMLDivElement) => containerRef.current = el}
+                        cameraConfig={cameraConfig}
+                        isMobile={isMobile}
+                        viewportKey={viewportKey}
                     />
                 </div>
 

@@ -45,17 +45,18 @@ const defaultOptions: StageSizingOptions = {
 };
 
 export const useResponsiveGameViewport = (options: ResponsiveOptions = {}) => {
-  const [viewport, setViewport] = useState({ width: 1280, height: 720 });
+  const readViewport = () => {
+    if (typeof window === 'undefined') return { width: 1280, height: 720 };
+    const vv = window.visualViewport;
+    return {
+      width: vv?.width ?? window.innerWidth,
+      height: vv?.height ?? window.innerHeight,
+    };
+  };
+
+  const [viewport, setViewport] = useState(readViewport());
 
   useEffect(() => {
-    const readViewport = () => {
-      const vv = window.visualViewport;
-      return {
-        width: vv?.width ?? window.innerWidth,
-        height: vv?.height ?? window.innerHeight,
-      };
-    };
-
     const handleResize = () => setViewport(readViewport());
 
     handleResize();
