@@ -248,7 +248,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   }), [showIntro]);
 
   // Single responsive stage sizing source
-  const { stageHeight, stageWidth, isMobile } = useResponsiveGameViewport(viewportOptions);
+  const { stageHeight, stageWidth, viewport, isMobile, isTablet } = useResponsiveGameViewport(viewportOptions);
 
   const handleSelectGame = (game: GameType) => {
       if (selectedGame !== game) {
@@ -272,22 +272,34 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   // Fullscreen is only active when playing AND on mobile
   const fullscreenActive = isPlaying && isMobile;
 
+  const cappedStageHeight = useMemo(
+    () => Math.min(stageHeight, viewport.height * (isMobile ? 0.95 : 0.9)),
+    [stageHeight, viewport.height, isMobile]
+  );
+
+  const cappedStageWidth = useMemo(
+    () => Math.min(stageWidth, viewport.width - (isMobile ? 16 : isTablet ? 32 : 64)),
+    [stageWidth, viewport.width, isMobile, isTablet]
+  );
+
   const stageContainerStyle = useMemo(() => ({
-    height: stageHeight,
-    maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)',
-    maxWidth: fullscreenActive ? '100%' : stageWidth,
+    height: cappedStageHeight,
+    maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : `min(${cappedStageHeight}px, ${viewport.height * 0.95}px)`,
+    maxWidth: fullscreenActive ? '100%' : cappedStageWidth,
+    width: '100%',
     marginInline: 'auto'
-  }), [fullscreenActive, stageHeight, stageWidth]);
+  }), [cappedStageHeight, cappedStageWidth, fullscreenActive, viewport.height]);
 
   const stageFrameStyle = useMemo(() => ({
     paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
     paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
     touchAction: fullscreenActive ? 'none' : 'manipulation',
-    maxWidth: stageWidth,
-    height: stageHeight,
+    maxWidth: cappedStageWidth,
+    height: cappedStageHeight,
     marginInline: 'auto',
+    width: '100%',
     borderRadius: fullscreenActive ? '18px' : undefined
-  }), [fullscreenActive, stageHeight, stageWidth]);
+  }), [cappedStageHeight, cappedStageWidth, fullscreenActive]);
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {

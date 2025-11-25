@@ -581,6 +581,11 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
 
     const { stageHeight, stageWidth, viewport, isMobile, isDesktop } = useResponsiveGameViewport(responsiveOptions);
 
+    const viewportKey = useMemo(
+        () => `${viewport.width}x${viewport.height}-${infoDismissed ? 'info' : 'full'}`,
+        [infoDismissed, viewport.height, viewport.width]
+    );
+
     // MOBILE OPTIMIZATION: Lock Scroll only on mobile, keep desktop scrollable for control panel
     useEffect(() => {
         if (!isMobile) return;
@@ -638,7 +643,12 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
     const controlsHeight = isMobile ? clamp(viewport.height * 0.24, 210, 280) : 0;
     const desktopSceneHeight = clamp(viewport.height - 140, 820, 1700);
+    const sceneMaxHeight = isMobile
+        ? Math.max(viewport.height - controlsHeight - 24, 480)
+        : Math.max(viewport.height - 120, 720);
     const sceneMinHeight = isMobile ? stageHeight : Math.max(stageHeight, desktopSceneHeight);
+    const sceneHeight = Math.min(sceneMinHeight, sceneMaxHeight);
+    const sceneScrollable = sceneMinHeight > sceneMaxHeight;
 
     const handleTakePhoto = () => {
         if (!containerRef.current) return;
@@ -739,13 +749,16 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
 
             <div className="relative flex-1 flex flex-col px-4 md:px-6 pb-6">
                 <div
-                    className="relative flex-1 rounded-2xl overflow-hidden"
+                    key={viewportKey}
+                    className="relative flex-1 rounded-2xl"
                     style={{
-                        minHeight: sceneMinHeight,
-                        height: sceneMinHeight,
-                        maxWidth: isDesktop ? stageWidth : undefined,
+                        minHeight: Math.min(sceneMinHeight, sceneMaxHeight),
+                        height: sceneHeight,
+                        maxHeight: sceneMaxHeight,
+                        maxWidth: isDesktop ? Math.min(stageWidth, viewport.width - 120) : '100%',
                         width: '100%',
                         marginInline: 'auto',
+                        overflow: sceneScrollable ? 'auto' : 'hidden',
                         touchAction: 'none'
                     }}
                 >
