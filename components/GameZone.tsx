@@ -217,13 +217,33 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   const [selectedGame, setSelectedGame] = useState<GameType>('runner');
   const [showIntro, setShowIntro] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [viewport, setViewport] = useState({ width: 1024, height: 768 });
 
-  // 1. Detect Mobile Device
+  // 1. Detect Mobile Device & Track Viewport with VisualViewport fallback
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 768px)').matches);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const readViewport = () => {
+        const vv = window.visualViewport;
+        return {
+            width: vv?.width ?? window.innerWidth,
+            height: vv?.height ?? window.innerHeight,
+        };
+    };
+
+    const syncViewport = () => {
+        setIsMobile(window.matchMedia('(max-width: 768px)').matches);
+        setViewport(readViewport());
+    };
+
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
+    window.visualViewport?.addEventListener('resize', syncViewport);
+
+    return () => {
+        window.removeEventListener('resize', syncViewport);
+        window.removeEventListener('orientationchange', syncViewport);
+        window.visualViewport?.removeEventListener('resize', syncViewport);
+    };
   }, []);
 
   const handleSelectGame = (game: GameType) => {
@@ -244,9 +264,21 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
 
   const isGameEnabled = gamesStatus ? gamesStatus[selectedGame] : true;
   const isPlaying = !showIntro && isGameEnabled;
-  
+
   // Fullscreen is only active when playing AND on mobile
   const fullscreenActive = isPlaying && isMobile;
+
+  // Responsive stage sizing for mobile and desktop
+  const isPortrait = viewport.height >= viewport.width;
+  const desktopIdleHeight = Math.max(Math.min(viewport.height * (isPortrait ? 0.84 : 0.8), 1200), 560);
+  const desktopPlayingHeight = Math.max(Math.min(viewport.height - 48, 1400), 720);
+  const desktopStageHeight = isPlaying ? desktopPlayingHeight : desktopIdleHeight;
+  const fullscreenHeight = Math.min(viewport.height - 12, 920);
+  const stageHeight = fullscreenActive ? fullscreenHeight : desktopStageHeight;
+  const desktopWidth = isPlaying ? Math.min(viewport.width - 48, 1400) : Math.min(viewport.width, 1180);
+  const stageWidth = fullscreenActive
+    ? Math.min(viewport.width - 24, isPortrait ? viewport.width : viewport.height * 0.75)
+    : desktopWidth;
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
@@ -307,22 +339,28 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
       </div>
 
       {/* 3. Dual Mode Container Logic */}
-      <div 
+      <div
         className={
             fullscreenActive
-            ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center" // Mobile Fullscreen
-            : "relative w-full h-[80vh] max-h-[650px] rounded-3xl border border-gray-800 bg-black z-10" // Desktop Card
+            ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
+            : "relative w-full rounded-3xl border border-gray-800 bg-black z-10"
         }
+        style={{ height: stageHeight, maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)' }}
       >
          {/* Content Wrapper / Stage */}
-         <div 
+         <div
             className={`
                 relative overflow-hidden touch-none select-none w-full h-full
-                ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''} 
+                ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''}
             `}
-            style={{ 
-                paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0, 
-                paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0 
+            style={{
+                paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
+                paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
+                touchAction: fullscreenActive ? 'none' : 'manipulation',
+                maxWidth: stageWidth,
+                height: stageHeight,
+                marginInline: 'auto',
+                borderRadius: fullscreenActive ? '18px' : undefined
             }}
          >
              {!isGameEnabled && (
