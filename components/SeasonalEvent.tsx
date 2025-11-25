@@ -468,7 +468,7 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
             <TreeGarland typeId={garlandId} />
 
             {topperId && (
-                <group position={[0, 8.0, 0]}>
+                <group position={[0, 7.6, 0]}>
                     {topperId === 'star' && <mesh position={[0, 0.2, 0]}><octahedronGeometry args={[0.6]} /><meshStandardMaterial color="#fbbf24" emissive="#fbbf24" emissiveIntensity={1} /></mesh>}
                     {topperId === 'heart' && <group scale={1.5} rotation={[Math.PI, 0, 0]} position={[0, 0.2, 0]}><mesh geometry={assets.heartGeo} material={assets.glowingRed} /></group>}
                     {topperId === 'snowflake' && <group>{[0, 1, 2].map(k => <mesh key={k} rotation={[0, 0, k * Math.PI/3]}><boxGeometry args={[0.1, 1.2, 0.1]} /><meshStandardMaterial color="#bae6fd" emissive="#bae6fd" /></mesh>)}</group>}
@@ -496,7 +496,7 @@ const LoadingSpinner = () => (
 // Memoized Scene Container to prevent re-renders from UI
 const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, setContainerRef }: any) => (
     <div ref={setContainerRef} className="absolute inset-0 z-0">
-        <Canvas shadows camera={{ position: [0, 7.5, 17.5], fov: 46 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
+        <Canvas shadows camera={{ position: [0, 9.5, 20], fov: 52 }} dpr={[1, 1.5]} gl={{ preserveDrawingBuffer: true }}>
             <Suspense fallback={<LoadingSpinner />}>
                 <ambientLight intensity={0.5} color="#3b82f6" />
                 <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
@@ -517,11 +517,11 @@ const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland
             </Suspense>
             <OrbitControls
                 enableZoom={true}
-                target={[0, 5.5, 0]}
+                target={[0, 6.2, 0]}
                 minPolarAngle={Math.PI/4}
                 maxPolarAngle={Math.PI/2 - 0.08}
-                minDistance={8}
-                maxDistance={28}
+                minDistance={9}
+                maxDistance={26}
             />
         </Canvas>
     </div>
@@ -622,7 +622,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const bannerHeight = isMobile && !infoDismissed ? 170 : 0;
     const desktopSceneHeight = Math.min(Math.max(viewport.height * 0.82, 780), 1180);
     const sceneMinHeight = isMobile
-        ? Math.max(viewport.height - (controlsHeight + headerHeight + bannerHeight + 24), 360)
+        ? Math.max(viewport.height - (controlsHeight + headerHeight + bannerHeight + 24), 420)
         : desktopSceneHeight;
 
     const handleTakePhoto = () => {
