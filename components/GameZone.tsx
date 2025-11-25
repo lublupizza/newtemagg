@@ -269,16 +269,18 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   const fullscreenActive = isPlaying && isMobile;
 
   // Responsive stage sizing for mobile and desktop
+  const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
   const isPortrait = viewport.height >= viewport.width;
-  const desktopIdleHeight = Math.max(Math.min(viewport.height * (isPortrait ? 0.84 : 0.8), 1200), 560);
-  const desktopPlayingHeight = Math.max(Math.min(viewport.height - 48, 1400), 720);
-  const desktopStageHeight = isPlaying ? desktopPlayingHeight : desktopIdleHeight;
-  const fullscreenHeight = Math.min(viewport.height - 12, 920);
-  const stageHeight = fullscreenActive ? fullscreenHeight : desktopStageHeight;
-  const desktopWidth = isPlaying ? Math.min(viewport.width - 48, 1400) : Math.min(viewport.width, 1180);
+  const safeGap = isMobile ? 8 : 18;
+  const availableHeight = Math.max(viewport.height - safeGap * 2, 520);
+  const baseHeight = availableHeight * (isPlaying ? (isMobile ? 0.98 : 0.94) : (isMobile ? 0.9 : isPortrait ? 0.9 : 0.86));
+  const stageHeight = clamp(baseHeight, isMobile ? 460 : 640, Math.max(availableHeight, viewport.height * 0.98));
+
+  const availableWidth = Math.max(viewport.width - (isMobile ? 12 : 64), 360);
+  const desktopWidthTarget = isPlaying ? availableWidth : viewport.width * 0.82;
   const stageWidth = fullscreenActive
-    ? Math.min(viewport.width - 24, isPortrait ? viewport.width : viewport.height * 0.75)
-    : desktopWidth;
+    ? clamp(isPortrait ? viewport.width - 12 : viewport.height * 0.8, 340, availableWidth)
+    : clamp(desktopWidthTarget, isMobile ? 360 : 820, Math.max(availableWidth, viewport.width * 0.96));
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
@@ -305,7 +307,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   }, [fullscreenActive]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" style={{ minHeight: 'min(1200px, 100dvh)' }}>
       
       {/* Header Section */}
       <div className="flex justify-between items-end border-b border-gray-700 pb-4">
@@ -345,7 +347,12 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
             ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
             : "relative w-full rounded-3xl border border-gray-800 bg-black z-10"
         }
-        style={{ height: stageHeight, maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)' }}
+        style={{
+            height: stageHeight,
+            maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)',
+            maxWidth: fullscreenActive ? '100%' : stageWidth,
+            marginInline: 'auto'
+        }}
       >
          {/* Content Wrapper / Stage */}
          <div

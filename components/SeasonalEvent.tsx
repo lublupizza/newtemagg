@@ -617,12 +617,13 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
         localStorage.setItem('lyublupizza_tree_state', JSON.stringify(data));
     }, [placedItems, garland, topper]);
 
-    const controlsHeight = isMobile ? 210 : 0;
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+    const controlsHeight = isMobile ? clamp(viewport.height * 0.24, 210, 280) : 0;
     const headerHeight = isMobile ? 82 : 0;
-    const bannerHeight = isMobile && !infoDismissed ? 170 : 0;
-    const desktopSceneHeight = Math.min(Math.max(viewport.height * 0.82, 780), 1180);
+    const bannerHeight = isMobile && !infoDismissed ? clamp(viewport.height * 0.28, 140, 240) : 0;
+    const desktopSceneHeight = Math.min(Math.max(viewport.height * 0.9, 820), 1600);
     const sceneMinHeight = isMobile
-        ? Math.max(viewport.height - (controlsHeight + headerHeight + bannerHeight + 24), 420)
+        ? clamp(viewport.height - (controlsHeight + headerHeight + bannerHeight + 18), 460, viewport.height * 0.95)
         : desktopSceneHeight;
 
     const handleTakePhoto = () => {
@@ -680,7 +681,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
 
     return (
         <div
-            className="relative flex flex-col min-h-screen bg-[#0f172a] text-white"
+            className="relative flex flex-col min-h-[100dvh] bg-[#0f172a] text-white"
             style={{ paddingBottom: isMobile ? controlsHeight + 16 : 120, touchAction: isMobile ? 'manipulation' : 'auto' }}
         >
             <div
