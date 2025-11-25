@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Trophy, Gamepad2, PlayCircle, ChefHat, Grid3X3, ArrowUpCircle, Info, Keyboard, MousePointer, Hand, Rocket, Box, Flag, X, BrainCircuit, Disc, Puzzle, Ticket } from 'lucide-react';
 import { Language, GamesConfig, GameId } from '../types';
 import PizzaRunner from './PizzaRunner';
@@ -13,6 +13,7 @@ import WheelFortune from './WheelFortune';
 import PuzzleGame from './PuzzleGame';
 import ScratchGame from './ScratchGame';
 import DisabledGameScreen from './DisabledGameScreen';
+import { useResponsiveGameViewport } from '../hooks/useResponsiveGameViewport';
 
 interface GameZoneProps {
   onScoreUpdate: (points: number) => void;
@@ -216,15 +217,38 @@ const GameIntroCard = ({ config, language, onPlay }: { config: any, language: La
 const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatus }) => {
   const [selectedGame, setSelectedGame] = useState<GameType>('runner');
   const [showIntro, setShowIntro] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const viewportOptions = useMemo(() => ({
+    fillHeight: showIntro ? 0.9 : 0.97,
+    fillWidth: showIntro ? 0.88 : 0.95,
+    breakpoints: {
+      mobile: {
+        reservedTop: 210,
+        reservedBottom: 120,
+        minHeight: 480,
+        minWidth: 360,
+        horizontalPadding: 12,
+      },
+      tablet: {
+        reservedTop: 240,
+        reservedBottom: 90,
+        minHeight: 560,
+        minWidth: 620,
+        horizontalPadding: 24,
+      },
+      desktop: {
+        reservedTop: 240,
+        reservedBottom: 120,
+        minHeight: 720,
+        minWidth: 840,
+        fillHeight: showIntro ? 0.9 : 0.95,
+        fillWidth: showIntro ? 0.92 : 0.96,
+        horizontalPadding: 32,
+      },
+    },
+  }), [showIntro]);
 
-  // 1. Detect Mobile Device
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 768px)').matches);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  // Single responsive stage sizing source
+  const { stageHeight, stageWidth, isMobile } = useResponsiveGameViewport(viewportOptions);
 
   const handleSelectGame = (game: GameType) => {
       if (selectedGame !== game) {
@@ -244,9 +268,26 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
 
   const isGameEnabled = gamesStatus ? gamesStatus[selectedGame] : true;
   const isPlaying = !showIntro && isGameEnabled;
-  
+
   // Fullscreen is only active when playing AND on mobile
   const fullscreenActive = isPlaying && isMobile;
+
+  const stageContainerStyle = useMemo(() => ({
+    height: stageHeight,
+    maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)',
+    maxWidth: fullscreenActive ? '100%' : stageWidth,
+    marginInline: 'auto'
+  }), [fullscreenActive, stageHeight, stageWidth]);
+
+  const stageFrameStyle = useMemo(() => ({
+    paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
+    paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
+    touchAction: fullscreenActive ? 'none' : 'manipulation',
+    maxWidth: stageWidth,
+    height: stageHeight,
+    marginInline: 'auto',
+    borderRadius: fullscreenActive ? '18px' : undefined
+  }), [fullscreenActive, stageHeight, stageWidth]);
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
@@ -273,7 +314,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   }, [fullscreenActive]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" style={{ minHeight: 'min(1200px, 100dvh)' }}>
       
       {/* Header Section */}
       <div className="flex justify-between items-end border-b border-gray-700 pb-4">
@@ -307,23 +348,21 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
       </div>
 
       {/* 3. Dual Mode Container Logic */}
-      <div 
+      <div
         className={
             fullscreenActive
-            ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center" // Mobile Fullscreen
-            : "relative w-full h-[80vh] max-h-[650px] rounded-3xl border border-gray-800 bg-black z-10" // Desktop Card
+            ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
+            : "relative w-full rounded-3xl border border-gray-800 bg-black z-10"
         }
+        style={stageContainerStyle}
       >
          {/* Content Wrapper / Stage */}
-         <div 
+         <div
             className={`
                 relative overflow-hidden touch-none select-none w-full h-full
-                ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''} 
+                ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''}
             `}
-            style={{ 
-                paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0, 
-                paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0 
-            }}
+            style={stageFrameStyle}
          >
              {!isGameEnabled && (
                  <DisabledGameScreen title={GAMES_CONFIG[selectedGame].title[language]} language={language} />
