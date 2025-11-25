@@ -533,7 +533,6 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const [topper, setTopper] = useState<string | null>(TOPPERS[0].id);
     const [infoDismissed, setInfoDismissed] = useState(false);
     const [viewport, setViewport] = useState({ width: 1024, height: 768 });
-    const isMobile = viewport.width < 768;
 
     // MOBILE OPTIMIZATION: Lock Scroll only on mobile, keep desktop scrollable for control panel
     useEffect(() => {
@@ -559,6 +558,27 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
             window.removeEventListener('touchmove', preventDefault);
         };
     }, [isMobile]);
+
+    useEffect(() => {
+        const readViewport = () => {
+            const vv = window.visualViewport;
+            return {
+                width: vv?.width ?? window.innerWidth,
+                height: vv?.height ?? window.innerHeight,
+            };
+        };
+
+        const handleResize = () => setViewport(readViewport());
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        window.visualViewport?.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.visualViewport?.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     useEffect(() => {
         const readViewport = () => {
@@ -610,6 +630,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
         localStorage.setItem('lyublupizza_tree_state', JSON.stringify(data));
     }, [placedItems, garland, topper]);
 
+    const isMobile = viewport.width < 768;
     const controlsHeight = isMobile ? 210 : 0;
     const headerHeight = isMobile ? 82 : 0;
     const bannerHeight = isMobile && !infoDismissed ? 170 : 0;
