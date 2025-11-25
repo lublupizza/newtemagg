@@ -534,24 +534,49 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
     const [infoDismissed, setInfoDismissed] = useState(false);
     const [viewport, setViewport] = useState({ width: 1024, height: 768 });
 
-    // MOBILE OPTIMIZATION: Lock Scroll
+    // MOBILE OPTIMIZATION: Lock Scroll only on mobile, keep desktop scrollable for control panel
     useEffect(() => {
+        if (!isMobile) return;
+
+        const previousOverflow = document.body.style.overflow;
+        const previousTouchAction = document.body.style.touchAction;
         document.body.style.overflow = 'hidden';
         document.body.style.touchAction = 'none';
-        
+
         const preventDefault = (e: TouchEvent) => {
             // Allow multi-touch gestures if needed, but mostly block
             if (e.touches.length > 1) return;
             e.preventDefault();
         };
-        
+
         // Passive false required to preventDefault
         window.addEventListener('touchmove', preventDefault, { passive: false });
-        
+
         return () => {
-            document.body.style.overflow = '';
-            document.body.style.touchAction = '';
+            document.body.style.overflow = previousOverflow;
+            document.body.style.touchAction = previousTouchAction;
             window.removeEventListener('touchmove', preventDefault);
+        };
+    }, [isMobile]);
+
+    useEffect(() => {
+        const readViewport = () => {
+            const vv = window.visualViewport;
+            return {
+                width: vv?.width ?? window.innerWidth,
+                height: vv?.height ?? window.innerHeight,
+            };
+        };
+
+        const handleResize = () => setViewport(readViewport());
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        window.visualViewport?.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.visualViewport?.removeEventListener('resize', handleResize);
         };
     }, []);
 
