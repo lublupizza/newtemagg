@@ -217,13 +217,33 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   const [selectedGame, setSelectedGame] = useState<GameType>('runner');
   const [showIntro, setShowIntro] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [viewport, setViewport] = useState({ width: 1024, height: 768 });
 
-  // 1. Detect Mobile Device
+  // 1. Detect Mobile Device & Track Viewport with VisualViewport fallback
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 768px)').matches);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const readViewport = () => {
+        const vv = window.visualViewport;
+        return {
+            width: vv?.width ?? window.innerWidth,
+            height: vv?.height ?? window.innerHeight,
+        };
+    };
+
+    const syncViewport = () => {
+        setIsMobile(window.matchMedia('(max-width: 768px)').matches);
+        setViewport(readViewport());
+    };
+
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('orientationchange', syncViewport);
+    window.visualViewport?.addEventListener('resize', syncViewport);
+
+    return () => {
+        window.removeEventListener('resize', syncViewport);
+        window.removeEventListener('orientationchange', syncViewport);
+        window.visualViewport?.removeEventListener('resize', syncViewport);
+    };
   }, []);
 
   const handleSelectGame = (game: GameType) => {
@@ -244,9 +264,23 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
 
   const isGameEnabled = gamesStatus ? gamesStatus[selectedGame] : true;
   const isPlaying = !showIntro && isGameEnabled;
-  
+
   // Fullscreen is only active when playing AND on mobile
   const fullscreenActive = isPlaying && isMobile;
+
+  // Responsive stage sizing for mobile and desktop
+  const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+  const isPortrait = viewport.height >= viewport.width;
+  const safeGap = isMobile ? 8 : 18;
+  const availableHeight = Math.max(viewport.height - safeGap * 2, 520);
+  const baseHeight = availableHeight * (isPlaying ? (isMobile ? 0.98 : 0.94) : (isMobile ? 0.9 : isPortrait ? 0.9 : 0.86));
+  const stageHeight = clamp(baseHeight, isMobile ? 460 : 640, Math.max(availableHeight, viewport.height * 0.98));
+
+  const availableWidth = Math.max(viewport.width - (isMobile ? 12 : 64), 360);
+  const desktopWidthTarget = isPlaying ? availableWidth : viewport.width * 0.82;
+  const stageWidth = fullscreenActive
+    ? clamp(isPortrait ? viewport.width - 12 : viewport.height * 0.8, 340, availableWidth)
+    : clamp(desktopWidthTarget, isMobile ? 360 : 820, Math.max(availableWidth, viewport.width * 0.96));
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
@@ -273,7 +307,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   }, [fullscreenActive]);
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8" style={{ minHeight: 'min(1200px, 100dvh)' }}>
       
       {/* Header Section */}
       <div className="flex justify-between items-end border-b border-gray-700 pb-4">
@@ -307,22 +341,33 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
       </div>
 
       {/* 3. Dual Mode Container Logic */}
-      <div 
+      <div
         className={
             fullscreenActive
-            ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center" // Mobile Fullscreen
-            : "relative w-full h-[80vh] max-h-[650px] rounded-3xl border border-gray-800 bg-black z-10" // Desktop Card
+            ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
+            : "relative w-full rounded-3xl border border-gray-800 bg-black z-10"
         }
+        style={{
+            height: stageHeight,
+            maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : 'calc(100vh - 32px)',
+            maxWidth: fullscreenActive ? '100%' : stageWidth,
+            marginInline: 'auto'
+        }}
       >
          {/* Content Wrapper / Stage */}
-         <div 
+         <div
             className={`
                 relative overflow-hidden touch-none select-none w-full h-full
-                ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''} 
+                ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''}
             `}
-            style={{ 
-                paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0, 
-                paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0 
+            style={{
+                paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
+                paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
+                touchAction: fullscreenActive ? 'none' : 'manipulation',
+                maxWidth: stageWidth,
+                height: stageHeight,
+                marginInline: 'auto',
+                borderRadius: fullscreenActive ? '18px' : undefined
             }}
          >
              {!isGameEnabled && (
