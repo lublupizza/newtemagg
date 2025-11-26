@@ -147,6 +147,44 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     return { ...baseStyle, width: '100%', height: '100%', minHeight: '600px' };
   }, [isMobile, config]);
 
+  const selectorButtons = (
+    <div
+      className={
+        isDesktop
+          ? 'flex flex-col gap-3'
+          : 'flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x touch-pan-x'
+      }
+    >
+      {Object.entries(GAMES_CONFIG).map(([key, config]) => (
+        <button
+          key={key}
+          onClick={() => handleSelectGame(key as GameType)}
+          className={`
+            snap-start rounded-xl border-2 transition-all group w-full
+            ${isDesktop ? 'flex items-center gap-4 p-4' : 'flex-none w-[200px] p-4 flex items-center gap-4'}
+            ${selectedGame === key ? 'border-pink-500 bg-pink-500/10' : 'border-gray-700 bg-gray-800 hover:border-gray-500'}
+          `}
+        >
+          <div
+            className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl shrink-0 ${
+              selectedGame === key ? 'bg-pink-500 text-white' : 'bg-gray-700'
+            }`}
+          >
+            {config.icon}
+          </div>
+          <div className="text-left overflow-hidden">
+            <div
+              className={`font-black italic truncate ${selectedGame === key ? 'text-white' : 'text-gray-400'}`}
+            >
+              {config.title[language]}
+            </div>
+            <div className="text-xs text-gray-500">{key === 'quiz' || key === 'wheel' ? 'Bonus' : 'Arcade'}</div>
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8 min-h-[80vh]">
       <div className="flex flex-col h-full">
@@ -187,7 +225,6 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
             {showIntro && isGameEnabled && <GameIntroCard config={config} language={language} onPlay={() => setShowIntro(false)} />}
           </div>
         </div>
-      </div>
 
       <aside className="flex flex-col gap-4 lg:sticky lg:top-8 h-fit">
         <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 shadow-xl">
