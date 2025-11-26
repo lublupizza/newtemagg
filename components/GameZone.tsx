@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Trophy, Gamepad2, PlayCircle, ChefHat, Grid3X3, Info, Keyboard, MousePointer, Hand, Rocket, Box, Flag, X, BrainCircuit, Disc, Puzzle, Ticket } from 'lucide-react';
 import { Language, GamesConfig, GameId } from '../types';
 import PizzaRunner from './PizzaRunner';
@@ -22,17 +22,17 @@ interface GameZoneProps {
 
 type GameType = GameId;
 
-// КОНФИГУРАЦИЯ С ORIENTATION (ВАЖНО!)
+// КОНФИГУРАЦИЯ
 const GAMES_CONFIG: Record<string, any> = {
   runner: {
     id: 'runner',
     title: { ru: 'CYBER RUSH 3D', en: 'CYBER RUSH 3D' },
-    desc: { ru: 'Курьер будущего. Город не спит.', en: 'Future courier.' },
+    desc: { ru: 'Курьер будущего.', en: 'Future courier.' },
     objective: { ru: 'Уклоняйтесь от препятствий.', en: 'Dodge obstacles.' },
     controls: { type: 'keyboard', label: { ru: 'Стрелки / Свайп', en: 'Arrows / Swipe' } },
     icon: <Gamepad2 className="w-12 h-12 text-pink-500" />,
     color: 'border-pink-500 shadow-pink-500/20',
-    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ
+    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ (ВАЖНО)
   },
   jump: {
     id: 'jump',
@@ -42,7 +42,7 @@ const GAMES_CONFIG: Record<string, any> = {
     controls: { type: 'keyboard', label: { ru: 'Тап лево/право', en: 'Tap Left/Right' } },
     icon: <Rocket className="w-12 h-12 text-red-500" />,
     color: 'border-red-500 shadow-red-500/20',
-    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ
+    orientation: 'portrait'
   },
   snake: {
     id: 'snake',
@@ -52,7 +52,7 @@ const GAMES_CONFIG: Record<string, any> = {
     controls: { type: 'keyboard', label: { ru: 'Стрелки', en: 'Arrows' } },
     icon: <PlayCircle className="w-12 h-12 text-green-500" />,
     color: 'border-green-500 shadow-green-500/20',
-    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ
+    orientation: 'portrait'
   },
   stacker: {
     id: 'stacker',
@@ -62,7 +62,7 @@ const GAMES_CONFIG: Record<string, any> = {
     controls: { type: 'mouse', label: { ru: 'Клик', en: 'Click' } },
     icon: <Box className="w-12 h-12 text-yellow-500" />,
     color: 'border-yellow-500 shadow-yellow-500/20',
-    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ
+    orientation: 'portrait'
   },
   kitchen: {
     id: 'kitchen',
@@ -84,72 +84,68 @@ const GAMES_CONFIG: Record<string, any> = {
     color: 'border-blue-500 shadow-blue-500/20',
     orientation: 'square' // КВАДРАТНАЯ
   },
-  quiz: { id: 'quiz', title: { ru: 'ВИКТОРИНА', en: 'QUIZ' }, desc: { ru: '', en: '' }, objective: { ru: '', en: '' }, controls: { type: 'mouse', label: { ru: '', en: '' } }, icon: <BrainCircuit className="w-12 h-12 text-purple-500" />, color: 'border-purple-500', orientation: 'landscape' },
-  wheel: { id: 'wheel', title: { ru: 'КОЛЕСО', en: 'WHEEL' }, desc: { ru: '', en: '' }, objective: { ru: '', en: '' }, controls: { type: 'mouse', label: { ru: '', en: '' } }, icon: <Disc className="w-12 h-12 text-yellow-500" />, color: 'border-yellow-500', orientation: 'square' },
-  puzzle: { id: 'puzzle', title: { ru: 'ПАЗЛ', en: 'PUZZLE' }, desc: { ru: '', en: '' }, objective: { ru: '', en: '' }, controls: { type: 'mouse', label: { ru: '', en: '' } }, icon: <Puzzle className="w-12 h-12 text-blue-400" />, color: 'border-blue-400', orientation: 'landscape' },
-  scratch: { id: 'scratch', title: { ru: 'СКРЕТЧ', en: 'SCRATCH' }, desc: { ru: '', en: '' }, objective: { ru: '', en: '' }, controls: { type: 'mouse', label: { ru: '', en: '' } }, icon: <Ticket className="w-12 h-12 text-green-500" />, color: 'border-green-500', orientation: 'portrait' },
+  quiz: { id: 'quiz', title: { ru: 'ВИКТОРИНА', en: 'QUIZ' }, desc: {ru:'',en:''}, objective: {ru:'',en:''}, controls: {type:'mouse', label:{ru:'',en:''}}, icon: <BrainCircuit className="w-12 h-12 text-purple-500"/>, color: 'border-purple-500', orientation: 'landscape'},
+  wheel: { id: 'wheel', title: { ru: 'КОЛЕСО', en: 'WHEEL' }, desc: {ru:'',en:''}, objective: {ru:'',en:''}, controls: {type:'mouse', label:{ru:'',en:''}}, icon: <Disc className="w-12 h-12 text-yellow-500"/>, color: 'border-yellow-500', orientation: 'square'},
+  puzzle: { id: 'puzzle', title: { ru: 'ПАЗЛ', en: 'PUZZLE' }, desc: {ru:'',en:''}, objective: {ru:'',en:''}, controls: {type:'mouse', label:{ru:'',en:''}}, icon: <Puzzle className="w-12 h-12 text-blue-400"/>, color: 'border-blue-400', orientation: 'landscape'},
+  scratch: { id: 'scratch', title: { ru: 'СКРЕТЧ', en: 'SCRATCH' }, desc: {ru:'',en:''}, objective: {ru:'',en:''}, controls: {type:'mouse', label:{ru:'',en:''}}, icon: <Ticket className="w-12 h-12 text-green-500"/>, color: 'border-green-500', orientation: 'portrait'},
 };
 
-const GameIntroCard = ({ config, language, onPlay }: { config: any; language: Language; onPlay: () => void }) => (
-  <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
-    <div className={`relative w-full max-w-md bg-gray-900 border-2 ${config.color} rounded-3xl p-8 text-center shadow-2xl flex flex-col items-center`}>
-      <div className={`w-20 h-20 rounded-full bg-gray-800 border-2 ${config.color} flex items-center justify-center mb-6 shadow-lg shrink-0`}>
-        {config.icon}
-      </div>
-      <h2 className="text-3xl font-black text-white italic tracking-tighter mb-4">{config.title[language]}</h2>
-      <button onClick={(e) => { e.stopPropagation(); onPlay(); }} className="w-full py-4 bg-white text-black font-black text-xl rounded-xl hover:scale-105 transition-transform flex items-center justify-center gap-2">
-        <PlayCircle className="w-6 h-6 fill-current" /> {language === 'ru' ? 'ИГРАТЬ' : 'PLAY'}
-      </button>
+const GameIntroCard = ({ config, language, onPlay }: { config: any, language: Language, onPlay: () => void }) => (
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+        <div className={`relative w-full max-w-md bg-gray-900 border-2 ${config.color} rounded-3xl p-8 text-center shadow-2xl flex flex-col items-center`}>
+            <div className={`w-20 h-20 rounded-full bg-gray-800 border-2 ${config.color} flex items-center justify-center mb-6 shadow-lg shrink-0`}>
+                {config.icon}
+            </div>
+            <h2 className="text-3xl font-black text-white italic tracking-tighter mb-4">{config.title[language]}</h2>
+            <p className="text-gray-400 text-sm mb-8">{config.desc[language]}</p>
+            <button onClick={(e) => { e.stopPropagation(); onPlay(); }} className="w-full py-4 bg-white text-black font-black text-xl rounded-xl hover:scale-105 transition-transform flex items-center justify-center gap-2">
+                <PlayCircle className="w-6 h-6 fill-current" /> {language === 'ru' ? 'ИГРАТЬ' : 'PLAY'}
+            </button>
+        </div>
     </div>
-  </div>
 );
 
 const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatus }) => {
   const [selectedGame, setSelectedGame] = useState<GameType>('runner');
   const [showIntro, setShowIntro] = useState(true);
-  const { isMobile } = useResponsiveGameViewport();
 
   const handleSelectGame = (game: GameType) => {
-    if (selectedGame !== game) {
-      setSelectedGame(game);
-      setShowIntro(true);
-    }
+      if (selectedGame !== game) {
+          setSelectedGame(game);
+          setShowIntro(true);
+      }
   };
 
   const handleGameOver = (score: number) => onScoreUpdate(score);
   const isGameEnabled = gamesStatus ? gamesStatus[selectedGame] : true;
   const isPlaying = !showIntro && isGameEnabled;
   const config = GAMES_CONFIG[selectedGame];
-  const selectorButtons = useMemo(() => Object.entries(GAMES_CONFIG), []);
 
-  // --- ЖЕСТКИЙ CSS РАСЧЕТ РАЗМЕРОВ ---
-  const containerStyle: React.CSSProperties = useMemo(() => {
-    if (isMobile) return { width: '100%', height: '100%', maxHeight: '80vh', borderRadius: '24px' };
+  // --- ЖЕСТКИЙ STYLE OBJECT (БЕЗ TAILWIND) ---
+  const orientation = config.orientation || 'landscape';
+  const isPortrait = orientation === 'portrait';
+  const isSquare = orientation === 'square';
 
-    const orientation = config.orientation || 'landscape';
-
-    const baseStyle: React.CSSProperties = {
-      transition: 'all 0.3s ease',
-      margin: '0 auto',
-      position: 'relative',
-      overflow: 'hidden',
-      backgroundColor: 'black',
-      border: '4px solid #1f2937',
-      borderRadius: '24px',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-    };
-
-    if (orientation === 'portrait') {
-      return { ...baseStyle, width: '100%', maxWidth: '420px', aspectRatio: '9/16', height: 'auto', maxHeight: '800px' };
-    }
-    if (orientation === 'square') {
-      return { ...baseStyle, width: '100%', maxWidth: '600px', aspectRatio: '1/1', height: 'auto', maxHeight: '800px' };
-    }
-    return { ...baseStyle, width: '100%', height: '100%', minHeight: '600px' };
-  }, [isMobile, config]);
+  const frameStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    maxWidth: isPortrait ? '450px' : isSquare ? '600px' : '100%',
+    aspectRatio: isPortrait ? '9/16' : isSquare ? '1/1' : 'auto',
+    maxHeight: isPortrait ? '800px' : isSquare ? '600px' : '600px',
+    minHeight: isPortrait ? '600px' : '400px',
+    margin: '0 auto',
+    position: 'relative',
+    backgroundColor: 'black',
+    borderRadius: '20px',
+    border: '4px solid #333',
+    overflow: 'hidden',
+    boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+  };
 
   return (
     <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8 min-h-[80vh]">
+      
+      {/* Main Game Area */}
       <div className="flex flex-col h-full">
         <div className="flex justify-between items-end border-b border-gray-700 pb-4 mb-6">
           <div>
@@ -162,60 +158,66 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center bg-gray-950/50 rounded-[3rem] border border-gray-800 p-4 lg:p-8 shadow-inner w-full min-h-[500px]">
-          <div style={containerStyle}>
-            {!isGameEnabled && <DisabledGameScreen title={config.title[language]} language={language} />}
+        {/* Обертка для центрирования */}
+        <div className="flex-1 flex items-center justify-center bg-gray-950/50 rounded-[3rem] border border-gray-800 p-4 lg:p-8 shadow-inner w-full min-h-[600px]">
+            
+            {/* --- ВОТ ЗДЕСЬ ПРИМЕНЯЕТСЯ ЖЕСТКИЙ СТИЛЬ --- */}
+            <div style={frameStyle}>
+                {!isGameEnabled && <DisabledGameScreen title={config.title[language]} language={language} />}
 
-            {isPlaying && (
-              <>
-                <button onClick={() => setShowIntro(true)} className="absolute top-4 right-4 z-50 p-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-red-500/80 transition-colors border border-white/20">
-                  <X className="w-6 h-6" />
-                </button>
+                {isPlaying && (
+                  <>
+                    <button onClick={() => setShowIntro(true)} className="absolute top-4 right-4 z-50 p-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-red-500/80 transition-colors border border-white/20">
+                      <X className="w-6 h-6" />
+                    </button>
 
-                {selectedGame === 'runner' && <PizzaRunner onGameOver={handleGameOver} language={language} isActive autoStart />}
-                {selectedGame === 'jump' && <PizzaJump onGameOver={handleGameOver} language={language} autoStart />}
-                {selectedGame === 'snake' && <PizzaSnake onGameOver={handleGameOver} language={language} autoStart />}
-                {selectedGame === 'stacker' && <PizzaStacker onGameOver={handleGameOver} language={language} autoStart />}
-                {selectedGame === 'kitchen' && <PizzaKitchen onGameOver={handleGameOver} language={language} autoStart />}
-                {selectedGame === 'checkers' && <PizzaCheckers onGameOver={handleGameOver} language={language} autoStart />}
-                {selectedGame === 'quiz' && <QuizGame onComplete={handleGameOver} language={language} />}
-                {selectedGame === 'wheel' && <WheelFortune onWin={(p, v) => handleGameOver(v > 0 ? v : 0)} language={language} />}
-                {selectedGame === 'puzzle' && <PuzzleGame onComplete={handleGameOver} language={language} />}
-                {selectedGame === 'scratch' && <ScratchGame onWin={(p) => handleGameOver(0)} language={language} />}
-              </>
-            )}
+                    {selectedGame === 'runner' && <PizzaRunner onGameOver={handleGameOver} language={language} isActive={true} autoStart={true} />}
+                    {selectedGame === 'jump' && <PizzaJump onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'snake' && <PizzaSnake onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'stacker' && <PizzaStacker onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'kitchen' && <PizzaKitchen onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'checkers' && <PizzaCheckers onGameOver={handleGameOver} language={language} autoStart={true} />}
+                    {selectedGame === 'quiz' && <QuizGame onComplete={handleGameOver} language={language} />}
+                    {selectedGame === 'wheel' && <WheelFortune onWin={(p, v) => handleGameOver(v > 0 ? v : 0)} language={language} />}
+                    {selectedGame === 'puzzle' && <PuzzleGame onComplete={handleGameOver} language={language} />}
+                    {selectedGame === 'scratch' && <ScratchGame onWin={(p) => handleGameOver(0)} language={language} />}
+                  </>
+                )}
 
-            {showIntro && isGameEnabled && <GameIntroCard config={config} language={language} onPlay={() => setShowIntro(false)} />}
-          </div>
+                {showIntro && isGameEnabled && (
+                  <GameIntroCard config={config} language={language} onPlay={() => setShowIntro(false)} />
+                )}
+            </div>
         </div>
       </div>
 
+      {/* Sidebar */}
       <aside className="flex flex-col gap-4 lg:sticky lg:top-8 h-fit">
         <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 shadow-xl">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-pink-400 font-bold mb-4">
             <Grid3X3 className="w-4 h-4" /> {language === 'ru' ? 'БИБЛИОТЕКА' : 'LIBRARY'}
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
-            {selectorButtons.map(([key, cfg]) => (
-              <button
+            {Object.entries(GAMES_CONFIG).map(([key, cfg]) => (
+                <button
                 key={key}
                 onClick={() => handleSelectGame(key as GameType)}
                 className={`
                     flex items-center gap-3 p-3 rounded-xl border transition-all text-left group
-                    ${selectedGame === key
-                      ? 'bg-gray-800 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.3)]'
-                      : 'bg-transparent border-gray-800 hover:bg-gray-800 hover:border-gray-600'}
+                    ${selectedGame === key 
+                        ? 'bg-gray-800 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.3)]' 
+                        : 'bg-transparent border-gray-800 hover:bg-gray-800 hover:border-gray-600'}
                 `}
-              >
+                >
                 <div className={`p-2 rounded-lg ${selectedGame === key ? 'bg-pink-500 text-white' : 'bg-gray-700 text-gray-400 group-hover:text-white'}`}>
-                  {React.cloneElement(cfg.icon, { className: 'w-5 h-5' })}
+                    {React.cloneElement(cfg.icon, { className: "w-5 h-5" })}
                 </div>
                 <div className="min-w-0 hidden md:block">
-                  <div className={`text-xs font-bold truncate ${selectedGame === key ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
-                    {cfg.title[language]}
-                  </div>
+                    <div className={`text-xs font-bold truncate ${selectedGame === key ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                        {cfg.title[language]}
+                    </div>
                 </div>
-              </button>
+                </button>
             ))}
           </div>
         </div>
