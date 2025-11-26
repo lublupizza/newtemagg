@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, Suspense, useEffect } from 'react';
+import React, { useState, useRef, useMemo, Suspense, useEffect, useImperativeHandle } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, Text, Sparkles, Tube } from '@react-three/drei';
 import * as THREE from 'three';
@@ -155,9 +155,12 @@ const TreeGarland = React.memo(({ typeId }: { typeId: string | null }) => {
     return (<group><Tube args={[curve, 64, 0.03, 6, false]}><meshStandardMaterial color="#111" /></Tube>{Array.from({ length: 80 }).map((_, i) => { const t = i / 80; const pos = curve.getPoint(t); const color = def.colors[i % def.colors.length]; return (<mesh key={i} position={pos}><sphereGeometry args={[0.07]} /><meshBasicMaterial color={color} /><pointLight distance={1.5} intensity={def.intensity} color={color} /></mesh>) })}</group>);
 });
 
-const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, topperId, isMobile }: any) => {
+const HeroTreeComponent = React.forwardRef(({ selectedDecor, placedItems, onPlace, garlandId, topperId, isMobile }: any, ref) => {
     const assets = useAssets();
     const ghostRef = useRef<THREE.Group>(null);
+    const treeRef = useRef<THREE.Group>(null);
+
+    useImperativeHandle(ref, () => ({ tree: treeRef.current }), []);
 
     // DESKTOP ONLY: Hover Logic
     const handlePointerMove = (e: any) => {
@@ -166,7 +169,7 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
         const treeTopY = 8.0; const treeBottomY = 1.0; const maxRadius = 3.2; const point = e.point;
         const y = Math.max(treeBottomY, Math.min(treeTopY, point.y));
         const progress = (treeTopY - y) / (treeTopY - treeBottomY);
-        const r = maxRadius * progress; 
+        const r = maxRadius * progress;
         const angle = Math.atan2(point.z, point.x);
         const x = Math.cos(angle) * r; const z = Math.sin(angle) * r;
         const pos = new THREE.Vector3(x, y, z);
@@ -175,14 +178,14 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
     };
 
     const handleClick = (e: any) => {
-        if (isMobile) return; 
+        if (isMobile) return;
         if (!selectedDecor || !ghostRef.current || !ghostRef.current.visible) return;
         e.stopPropagation();
         onPlace(ghostRef.current.position.clone(), ghostRef.current.quaternion.clone());
     };
 
     return (
-        <group>
+        <group ref={treeRef}>
             {/* Desktop interaction mesh */}
             {!isMobile && (
                 <mesh visible={false} position={[0, 4.5, 0]} onPointerMove={handlePointerMove} onClick={handleClick} onPointerOut={() => { if(ghostRef.current) ghostRef.current.visible = false; }}>
@@ -196,7 +199,7 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
                 {[2, 4, 5.8, 7.2].map((y, i) => {
                     const s = [3.2, 2.6, 1.8, 1][i];
                     const h = [3.5, 3, 2.5, 2][i];
-                    return <mesh key={i} position={[0, y, 0]}><coneGeometry args={[s, h, 16]} /><meshStandardMaterial color="#10b981" roughness={0.8} /></mesh>
+                    return <mesh key={i} position={[0, y, 0]}><coneGeometry args={[s, h, 16]} /><meshStandardMaterial color="#10b981" roughness={0.8} /></mesh>;
                 })}
             </group>
 
@@ -213,17 +216,17 @@ const HeroTree = React.memo(({ selectedDecor, placedItems, onPlace, garlandId, t
             {placedItems.map((item: any) => {
                 const def = ORNAMENTS.find(o => o.id === item.typeId);
                 if (!def) return null;
-                return <group key={item.id} position={item.position} quaternion={item.quaternion}><DetailedOrnament type={def.type} color={def.color} assets={assets} /></group>
+                return <group key={item.id} position={item.position} quaternion={item.quaternion}><DetailedOrnament type={def.type} color={def.color} assets={assets} /></group>;
             })}
 
             {/* Desktop Ghost */}
             {!isMobile && (
                 <group ref={ghostRef} visible={false}>
                     {selectedDecor && (
-                        <DetailedOrnament 
-                            type={ORNAMENTS.find(o => o.id === selectedDecor)?.type || 'sphere'} 
-                            color={ORNAMENTS.find(o => o.id === selectedDecor)?.color || 'white'} 
-                            assets={assets} 
+                        <DetailedOrnament
+                            type={ORNAMENTS.find(o => o.id === selectedDecor)?.type || 'sphere'}
+                            color={ORNAMENTS.find(o => o.id === selectedDecor)?.color || 'white'}
+                            assets={assets}
                         />
                     )}
                 </group>
@@ -255,30 +258,11 @@ const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland
                     topperId={topper} 
                     isMobile={isMobile}
                 />
-                {Array.from({ length: 5 }).map((_, i) => {
-                    const a = (i / 5) * Math.PI * 2;
-                    return <BrandedHouse key={i} position={[Math.sin(a)*16, 0, Math.cos(a)*16]} rotation={[0, a + Math.PI, 0]} />
-                })}
-                <BackgroundForest />
-                <FlyingSanta />
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-                    <planeGeometry args={[60, 60]} /><meshStandardMaterial color="#e2e8f0" roughness={0.8} />
-                </mesh>
-            </Suspense>
-            <OrbitControls
-                enableZoom={!isMobile}
-                enableRotate={!isMobile} // Disable rotation on mobile
-                enablePan={false}
-                target={[0, 6, 0]}
-                minPolarAngle={Math.PI/4}
-                maxPolarAngle={Math.PI/2 - 0.05}
-                minDistance={10}
-                maxDistance={30}
-            />
-        </Canvas>
-    </div>
-), (prev, next) => {
-    return prev.garland === next.garland && prev.topper === next.topper && prev.placedItems === next.placedItems && prev.selectedDecor === next.selectedDecor && prev.isMobile === next.isMobile;
+            </Canvas>
+        </div>
+    );
+}, (prev, next) => {
+    return prev.garland === next.garland && prev.topper === next.topper && prev.placedItems === next.placedItems && prev.selectedDecor === next.selectedDecor && prev.isMobile === next.isMobile && prev.viewportKey === next.viewportKey;
 });
 
 const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
@@ -393,6 +377,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
             <div ref={containerRef} className="absolute inset-0 z-0">
                 <SeasonalScene
                     key={sceneKey}
+                    viewportKey={sceneKey}
                     selectedDecor={!isMobile && activeTab === 'decor' ? selectedDecor : null}
                     placedItems={placedItems}
                     onPlace={(pos: any, rot: any) => setPlacedItems(p => [...p, { id: Date.now(), typeId: selectedDecor, position: pos, quaternion: rot }])}
