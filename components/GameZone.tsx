@@ -219,7 +219,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   const [showIntro, setShowIntro] = useState(true);
   const viewportOptions = useMemo(() => ({
     fillHeight: showIntro ? 0.9 : 0.96,
-    fillWidth: showIntro ? 0.86 : 0.92,
+    fillWidth: showIntro ? 0.82 : 0.9,
     breakpoints: {
       mobile: {
         reservedTop: 210,
@@ -291,8 +291,9 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     () => {
       const gutter = isMobile ? 12 : isTablet ? 28 : 96;
       const available = Math.max(viewport.width - gutter * 2, 320);
-      const desktopHardCap = isDesktop ? 1280 : Infinity;
-      return Math.min(cappedStageWidth, available, desktopHardCap);
+      const desktopHardCap = isDesktop ? 1100 : Infinity;
+      const viewportClamp = isDesktop ? viewport.width * 0.9 : viewport.width;
+      return Math.min(cappedStageWidth, available, desktopHardCap, viewportClamp);
     },
     [cappedStageWidth, isDesktop, isMobile, isTablet, viewport.width]
   );
