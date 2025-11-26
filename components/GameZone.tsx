@@ -218,8 +218,8 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   const [selectedGame, setSelectedGame] = useState<GameType>('runner');
   const [showIntro, setShowIntro] = useState(true);
   const viewportOptions = useMemo(() => ({
-    fillHeight: showIntro ? 0.9 : 0.97,
-    fillWidth: showIntro ? 0.88 : 0.95,
+    fillHeight: showIntro ? 0.9 : 0.96,
+    fillWidth: showIntro ? 0.86 : 0.92,
     breakpoints: {
       mobile: {
         reservedTop: 210,
@@ -240,9 +240,9 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
         reservedBottom: 120,
         minHeight: 720,
         minWidth: 840,
-        fillHeight: showIntro ? 0.9 : 0.95,
-        fillWidth: showIntro ? 0.92 : 0.96,
-        horizontalPadding: 32,
+        fillHeight: showIntro ? 0.9 : 0.94,
+        fillWidth: showIntro ? 0.88 : 0.92,
+        horizontalPadding: 40,
       },
     },
   }), [showIntro]);
@@ -297,6 +297,11 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     [cappedStageWidth, isDesktop, isMobile, isTablet, viewport.width]
   );
 
+  const stageContentWidth = useMemo(
+    () => Math.min(stageMaxWidth, cappedStageWidth),
+    [cappedStageWidth, stageMaxWidth]
+  );
+
   const stageContainerStyle = useMemo(() => ({
     height: cappedStageHeight,
     maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : `min(${cappedStageHeight}px, ${heightCeiling}px)`,
@@ -304,6 +309,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     width: '100%',
     display: 'flex',
     justifyContent: 'center',
+    alignItems: 'center',
     marginInline: 'auto',
     paddingInline: isDesktop ? 16 : 8,
     overflow: 'hidden',
@@ -315,13 +321,13 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
     touchAction: fullscreenActive ? 'none' : 'manipulation',
     maxWidth: '100%',
-    width: '100%',
+    width: stageContentWidth,
     height: cappedStageHeight,
     marginInline: 'auto',
     borderRadius: fullscreenActive ? '18px' : undefined,
     overflow: 'hidden',
     boxSizing: 'border-box' as const
-  }), [cappedStageHeight, fullscreenActive]);
+  }), [cappedStageHeight, fullscreenActive, stageContentWidth]);
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {

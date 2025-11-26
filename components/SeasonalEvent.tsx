@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, Suspense, useEffect } from 'react';
+import React, { useState, useRef, useMemo, Suspense, useEffect, useImperativeHandle } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, Text, Sparkles, Tube } from '@react-three/drei';
 import * as THREE from 'three';
@@ -155,9 +155,12 @@ const TreeGarland = React.memo(({ typeId }: { typeId: string | null }) => {
     return (<group><Tube args={[curve, 64, 0.03, 6, false]}><meshStandardMaterial color="#111" /></Tube>{Array.from({ length: 80 }).map((_, i) => { const t = i / 80; const pos = curve.getPoint(t); const color = def.colors[i % def.colors.length]; return (<mesh key={i} position={pos}><sphereGeometry args={[0.07]} /><meshBasicMaterial color={color} /><pointLight distance={1.5} intensity={def.intensity} color={color} /></mesh>) })}</group>);
 });
 
-const HeroTreeComponent = ({ selectedDecor, placedItems, onPlace, garlandId, topperId, isMobile }: any) => {
+const HeroTreeComponent = React.forwardRef(({ selectedDecor, placedItems, onPlace, garlandId, topperId, isMobile }: any, ref) => {
     const assets = useAssets();
     const ghostRef = useRef<THREE.Group>(null);
+    const treeRef = useRef<THREE.Group>(null);
+
+    useImperativeHandle(ref, () => ({ tree: treeRef.current }), []);
 
     // DESKTOP ONLY: Hover Logic
     const handlePointerMove = (e: any) => {
@@ -182,7 +185,7 @@ const HeroTreeComponent = ({ selectedDecor, placedItems, onPlace, garlandId, top
     };
 
     return (
-        <group>
+        <group ref={treeRef}>
             {/* Desktop interaction mesh */}
             {!isMobile && (
                 <mesh visible={false} position={[0, 4.5, 0]} onPointerMove={handlePointerMove} onClick={handleClick} onPointerOut={() => { if(ghostRef.current) ghostRef.current.visible = false; }}>
@@ -230,57 +233,87 @@ const HeroTreeComponent = ({ selectedDecor, placedItems, onPlace, garlandId, top
             )}
         </group>
     );
-};
+});
 
 const HeroTree = React.memo(HeroTreeComponent);
 
-const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, isMobile }: any) => (
-    <div className="absolute inset-0 z-0">
-        <Canvas
-            shadows
-            // Mobile: Fixed "Postcard" view. Desktop: Interactive.
-            camera={{ position: isMobile ? [0, 7, 24] : [0, 11, 22], fov: isMobile ? 55 : 48 }}
-            dpr={[1, 1.5]}
-            gl={{ preserveDrawingBuffer: true }}
-        >
-            <Suspense fallback={null}>
-                <ambientLight intensity={0.5} color="#3b82f6" />
-                <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
-                <spotLight position={[5, 10, 5]} angle={0.5} penumbra={1} intensity={2} color="white" castShadow target-position={[0, 4, 0]} />
-                <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade speed={0.5} />
-                <fog attach="fog" args={['#0f172a', 15, 45]} />
-                <HeroTree 
-                    selectedDecor={selectedDecor} 
-                    placedItems={placedItems} 
-                    onPlace={onPlace} 
-                    garlandId={garland} 
-                    topperId={topper} 
-                    isMobile={isMobile}
+const SeasonalScene = React.memo(({ selectedDecor, placedItems, onPlace, garland, topper, isMobile, viewportKey }: any) => {
+    const controlsRef = useRef<any>(null);
+    const treeRef = useRef<THREE.Group>(null);
+
+    useEffect(() => {
+        if (!controlsRef.current || !treeRef.current) return;
+        const camera = controlsRef.current.object as THREE.PerspectiveCamera;
+        const box = new THREE.Box3().setFromObject(treeRef.current);
+        const size = box.getSize(new THREE.Vector3());
+        const center = box.getCenter(new THREE.Vector3());
+
+        const fovInRadians = (camera.fov * Math.PI) / 180;
+        const fitHeightDistance = size.y / (2 * Math.tan(fovInRadians / 2));
+        const fitWidthDistance = size.x / (2 * Math.tan(fovInRadians / 2));
+        const distance = Math.max(fitHeightDistance, fitWidthDistance) * (isMobile ? 1.3 : 1.15);
+
+        const newPosition = center.clone().add(new THREE.Vector3(0, size.y * 0.1, distance));
+        camera.position.copy(newPosition);
+        camera.lookAt(center);
+
+        const target = center.clone();
+        target.y += size.y * 0.05;
+        controlsRef.current.target.copy(target);
+        controlsRef.current.minDistance = distance * 0.85;
+        controlsRef.current.maxDistance = distance * 1.35;
+        controlsRef.current.update();
+    }, [isMobile, viewportKey]);
+
+    return (
+        <div className="absolute inset-0 z-0">
+            <Canvas
+                shadows
+                camera={{ position: isMobile ? [0, 7, 24] : [0, 11, 22], fov: isMobile ? 55 : 48 }}
+                dpr={[1, 1.5]}
+                gl={{ preserveDrawingBuffer: true }}
+            >
+                <Suspense fallback={null}>
+                    <ambientLight intensity={0.5} color="#3b82f6" />
+                    <pointLight position={[10, 10, 10]} intensity={1} color="#ffaa00" />
+                    <spotLight position={[5, 10, 5]} angle={0.5} penumbra={1} intensity={2} color="white" castShadow target-position={[0, 4, 0]} />
+                    <Stars radius={100} depth={50} count={1000} factor={4} saturation={0} fade speed={0.5} />
+                    <fog attach="fog" args={['#0f172a', 15, 45]} />
+                    <HeroTree
+                        ref={treeRef}
+                        selectedDecor={selectedDecor}
+                        placedItems={placedItems}
+                        onPlace={onPlace}
+                        garlandId={garland}
+                        topperId={topper}
+                        isMobile={isMobile}
+                    />
+                    {Array.from({ length: 5 }).map((_, i) => {
+                        const a = (i / 5) * Math.PI * 2;
+                        return <BrandedHouse key={i} position={[Math.sin(a)*16, 0, Math.cos(a)*16]} rotation={[0, a + Math.PI, 0]} />
+                    })}
+                    <BackgroundForest />
+                    <FlyingSanta />
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+                        <planeGeometry args={[60, 60]} /><meshStandardMaterial color="#e2e8f0" roughness={0.8} />
+                    </mesh>
+                </Suspense>
+                <OrbitControls
+                    ref={controlsRef}
+                    enableZoom={!isMobile}
+                    enableRotate={!isMobile}
+                    enablePan={false}
+                    target={[0, 6, 0]}
+                    minPolarAngle={Math.PI/4}
+                    maxPolarAngle={Math.PI/2 - 0.05}
+                    minDistance={10}
+                    maxDistance={30}
                 />
-                {Array.from({ length: 5 }).map((_, i) => {
-                    const a = (i / 5) * Math.PI * 2;
-                    return <BrandedHouse key={i} position={[Math.sin(a)*16, 0, Math.cos(a)*16]} rotation={[0, a + Math.PI, 0]} />
-                })}
-                <BackgroundForest />
-                <FlyingSanta />
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-                    <planeGeometry args={[60, 60]} /><meshStandardMaterial color="#e2e8f0" roughness={0.8} />
-                </mesh>
-            </Suspense>
-            <OrbitControls
-                enableZoom={!isMobile}
-                enableRotate={!isMobile} // Disable rotation on mobile
-                enablePan={false}
-                target={[0, 6, 0]}
-                minPolarAngle={Math.PI/4}
-                maxPolarAngle={Math.PI/2 - 0.05}
-                minDistance={10}
-                maxDistance={30}
-            />
-        </Canvas>
-    </div>
-), (prev, next) => {
-    return prev.garland === next.garland && prev.topper === next.topper && prev.placedItems === next.placedItems && prev.selectedDecor === next.selectedDecor && prev.isMobile === next.isMobile;
+            </Canvas>
+        </div>
+    );
+}, (prev, next) => {
+    return prev.garland === next.garland && prev.topper === next.topper && prev.placedItems === next.placedItems && prev.selectedDecor === next.selectedDecor && prev.isMobile === next.isMobile && prev.viewportKey === next.viewportKey;
 });
 
 const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
@@ -395,6 +428,7 @@ const SeasonalEvent: React.FC<SeasonalEventProps> = ({ language, onBack }) => {
             <div ref={containerRef} className="absolute inset-0 z-0">
                 <SeasonalScene
                     key={sceneKey}
+                    viewportKey={sceneKey}
                     selectedDecor={!isMobile && activeTab === 'decor' ? selectedDecor : null}
                     placedItems={placedItems}
                     onPlace={(pos: any, rot: any) => setPlacedItems(p => [...p, { id: Date.now(), typeId: selectedDecor, position: pos, quaternion: rot }])}
