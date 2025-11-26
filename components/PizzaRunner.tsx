@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Text, Stars, Trail, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { Language } from '../types';
@@ -20,13 +19,34 @@ interface PizzaRunnerProps {
   autoStart?: boolean;
 }
 
-// --- SHARED ASSETS ---
+// --- MODELS ---
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const cylinderGeo = new THREE.CylinderGeometry(1, 1, 1, 16);
 const planeGeo = new THREE.PlaneGeometry(1, 1);
 const coneGeo = new THREE.ConeGeometry(1, 1, 1, 16);
 
-// --- UTILS ---
+// !!! АДАПТИВНАЯ КАМЕРА !!!
+// Этот компонент следит за шириной экрана и отодвигает камеру, если окно узкое
+const ResponsiveCamera = () => {
+    const { camera, viewport } = useThree();
+    
+    useFrame(() => {
+        const targetDist = 7;
+        let zPos = targetDist;
+        
+        // Если экран вертикальный (узкий), отодвигаем камеру назад
+        if (viewport.aspect < 1) {
+             zPos = targetDist / (viewport.aspect * 0.75); 
+        }
+        
+        camera.position.z = THREE.MathUtils.lerp(camera.position.z, zPos, 0.1);
+        camera.position.y = 3 + (zPos - targetDist) * 0.3; 
+        camera.lookAt(0, 0, 0);
+    });
+    
+    return null;
+};
+
 const HeartShape = () => {
   const shape = useMemo(() => {
     const s = new THREE.Shape();
@@ -43,7 +63,6 @@ const HeartShape = () => {
   return shape;
 };
 
-// --- 3D COMPONENTS (Memoized) ---
 const BrandedBackpack = React.memo(() => {
   const shape = HeartShape();
   const bagMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#fbbf24", roughness: 0.2 }), []);
@@ -296,8 +315,6 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
   const playerYRef = useRef(0);
   const playerVelYRef = useRef(0);
   const playerGroup = useRef<THREE.Group>(null);
-  
-  // MOBILE OPTIMIZATION: Touch references
   const touchStartRef = useRef<{x: number, y: number} | null>(null);
 
   const startGame = () => {
@@ -311,7 +328,18 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
 
   useEffect(() => { if (autoStart && isActive && gameState === 'start') startGame(); }, [autoStart, isActive]);
 
-  // MOBILE OPTIMIZATION: Handle Swipes and Taps
+  // --- УПРАВЛЕНИЕ (КЛАВИАТУРА И ТАЧ) ---
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (gameState !== 'playing') return;
+      if (e.key === 'ArrowLeft' || e.key === 'a') playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1);
+      if (e.key === 'ArrowRight' || e.key === 'd') playerLaneRef.current = Math.min(1, playerLaneRef.current + 1);
+      if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') && playerYRef.current <= 0) playerVelYRef.current = JUMP_FORCE;
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [gameState]);
+
   const handleTouchStart = (e: React.TouchEvent) => {
       touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   };
@@ -324,27 +352,14 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
       const diffX = endX - touchStartRef.current.x;
       const diffY = endY - touchStartRef.current.y;
       
-      // Swipe threshold
       if (Math.abs(diffX) > 30) {
-          if (diffX > 0) playerLaneRef.current = Math.min(1, playerLaneRef.current + 1); // Right
-          else playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1); // Left
+          if (diffX > 0) playerLaneRef.current = Math.min(1, playerLaneRef.current + 1);
+          else playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1);
       } else if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
-          // Tap to Jump
           if(playerYRef.current <= 0) playerVelYRef.current = JUMP_FORCE;
       }
       touchStartRef.current = null;
   };
-
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (gameState !== 'playing') return;
-      if (e.key === 'ArrowLeft' || e.key === 'a') playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1);
-      if (e.key === 'ArrowRight' || e.key === 'd') playerLaneRef.current = Math.min(1, playerLaneRef.current + 1);
-      if ((e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') && playerYRef.current <= 0) playerVelYRef.current = JUMP_FORCE;
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [gameState]);
 
   const PhysicsLoop = () => {
     useFrame((state, delta) => {
@@ -373,7 +388,12 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
     >
-        <Canvas shadows camera={{ position: [0, 3, 6], fov: 60 }} dpr={[1, 1.5]} gl={{ powerPreference: "high-performance" }}>
+        <Canvas 
+            shadows 
+            dpr={[1, 1.5]} 
+            gl={{ powerPreference: "high-performance" }}
+        >
+            <ResponsiveCamera />
             <DynamicAtmosphere score={score} />
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 20, 5]} intensity={1.5} castShadow shadow-bias={-0.0001} />
@@ -388,7 +408,7 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
             <WarpEffect speed={speed} />
         </Canvas>
 
-        <div className="absolute inset-0 pointer-events-none p-4 md:p-6 flex flex-col justify-between">
+        <div className="absolute inset-0 pointer-events-none p-4 md:p-6 flex flex-col justify-between z-20">
             <div className="flex justify-between items-start">
                 <div>
                     <h3 className="text-2xl md:text-3xl font-black italic text-white drop-shadow-[0_0_10px_rgba(236,72,153,0.8)]">{t.title}</h3>
@@ -399,43 +419,35 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
                     <div className="text-3xl md:text-5xl font-black text-white font-mono drop-shadow-md">{score}</div>
                 </div>
             </div>
-
-            {/* MOBILE OPTIMIZATION: Invisible controls visual hint */}
-            {gameState === 'playing' && (
-                <div className="grid grid-cols-2 gap-4 pointer-events-auto h-full absolute inset-0 z-10 opacity-0">
-                    {/* Left Zone */}
-                    <div onPointerDown={() => playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1)}></div>
-                    {/* Right Zone */}
-                    <div onPointerDown={() => playerLaneRef.current = Math.min(1, playerLaneRef.current + 1)}></div>
-                    {/* Jump Overlay (Bottom Center) */}
-                    <div className="absolute bottom-0 left-1/4 w-1/2 h-1/3" onPointerDown={() => { if(playerYRef.current <= 0) playerVelYRef.current = JUMP_FORCE; }}></div>
-                </div>
-            )}
-
-            {gameState === 'start' && (
-                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto z-20">
-                    <div className="relative">
-                        <div className="absolute inset-0 bg-pink-500 blur-3xl opacity-20 animate-pulse"></div>
-                        <Zap className="w-16 h-16 md:w-24 md:h-24 text-yellow-400 relative z-10 mb-6 drop-shadow-[0_0_20px_rgba(250,204,21,0.8)]" />
-                    </div>
-                    <h1 className="text-4xl md:text-6xl font-black text-white italic tracking-tighter mb-8 text-center leading-none">CYBER<br/><span className="text-pink-500">DELIVERY</span></h1>
-                    <button onClick={startGame} className="px-10 py-4 md:px-12 md:py-5 bg-white text-black font-black text-xl md:text-2xl rounded-full hover:scale-110 hover:bg-pink-400 hover:text-white transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(255,255,255,0.4)]">
-                        <Play className="fill-current w-6 h-6" /> {t.start}
-                    </button>
-                </div>
-            )}
-
-            {gameState === 'dead' && (
-                <div className="absolute inset-0 bg-red-900/80 backdrop-blur-md flex flex-col items-center justify-center pointer-events-auto z-20 animate-in zoom-in duration-300">
-                    <Skull className="w-16 h-16 md:w-24 md:h-24 text-white mb-4 animate-pulse" />
-                    <h2 className="text-4xl md:text-6xl font-black text-white mb-2">{t.gameover}</h2>
-                    <div className="text-pink-200 font-mono text-lg md:text-xl mb-8">SCORE: {score}</div>
-                    <button onClick={startGame} className="px-8 py-3 md:px-10 md:py-4 bg-white text-red-900 font-bold text-lg md:text-xl rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2">
-                        <RotateCcw className="w-6 h-6" /> {t.restart}
-                    </button>
-                </div>
-            )}
         </div>
+
+        {/* CLICK ZONES (MOUSE SUPPORT FOR PC) */}
+        {gameState === 'playing' && (
+            <div className="grid grid-cols-2 gap-4 pointer-events-auto h-full absolute inset-0 z-10 opacity-0">
+                <div className="h-full cursor-pointer" onClick={() => playerLaneRef.current = Math.max(-1, playerLaneRef.current - 1)}></div>
+                <div className="h-full cursor-pointer" onClick={() => playerLaneRef.current = Math.min(1, playerLaneRef.current + 1)}></div>
+            </div>
+        )}
+
+        {gameState === 'start' && (
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center pointer-events-auto z-30">
+                <h1 className="text-5xl md:text-6xl font-black text-white italic tracking-tighter mb-8 text-center">CYBER<br/><span className="text-pink-500">DELIVERY</span></h1>
+                <button onClick={startGame} className="px-10 py-4 md:px-12 md:py-5 bg-white text-black font-black text-xl md:text-2xl rounded-full hover:scale-110 hover:bg-pink-400 hover:text-white transition-all flex items-center gap-3 shadow-[0_0_40px_rgba(255,255,255,0.4)]">
+                    <Play className="fill-current w-6 h-6" /> {t.start}
+                </button>
+            </div>
+        )}
+
+        {gameState === 'dead' && (
+            <div className="absolute inset-0 bg-red-900/80 backdrop-blur-md flex flex-col items-center justify-center pointer-events-auto z-30 animate-in zoom-in duration-300">
+                <Skull className="w-16 h-16 md:w-24 md:h-24 text-white mb-4 animate-pulse" />
+                <h2 className="text-4xl md:text-6xl font-black text-white mb-2">{t.gameover}</h2>
+                <div className="text-pink-200 font-mono text-lg md:text-xl mb-8">SCORE: {score}</div>
+                <button onClick={startGame} className="px-8 py-3 md:px-10 md:py-4 bg-white text-red-900 font-bold text-lg md:text-xl rounded-full hover:bg-gray-200 transition-colors flex items-center gap-2">
+                    <RotateCcw className="w-6 h-6" /> {t.restart}
+                </button>
+            </div>
+        )}
     </div>
   );
 };
