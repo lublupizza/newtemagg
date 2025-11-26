@@ -1,6 +1,5 @@
-
-import React, { useState, useEffect } from 'react';
-import { Trophy, Gamepad2, PlayCircle, ChefHat, Grid3X3, ArrowUpCircle, Info, Keyboard, MousePointer, Hand, Rocket, Box, Flag, X, BrainCircuit, Disc, Puzzle, Ticket } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Trophy, Gamepad2, PlayCircle, ChefHat, Grid3X3, Info, Keyboard, MousePointer, Hand, Rocket, Box, Flag, X, BrainCircuit, Disc, Puzzle, Ticket } from 'lucide-react';
 import { Language, GamesConfig, GameId } from '../types';
 import PizzaRunner from './PizzaRunner';
 import PizzaSnake from './PizzaSnake';
@@ -13,371 +12,214 @@ import WheelFortune from './WheelFortune';
 import PuzzleGame from './PuzzleGame';
 import ScratchGame from './ScratchGame';
 import DisabledGameScreen from './DisabledGameScreen';
+import { useResponsiveGameViewport } from '../hooks/useResponsiveGameViewport';
 
 interface GameZoneProps {
   onScoreUpdate: (points: number) => void;
   language: Language;
-  gamesStatus?: GamesConfig; // Optional for now, but passed from App
+  gamesStatus?: GamesConfig;
 }
 
-type GameType = GameId; // Sync with types
+type GameType = GameId;
 
-// --- GAME CONFIGURATION & LORE ---
+// КОНФИГУРАЦИЯ С ORIENTATION (ВАЖНО!)
 const GAMES_CONFIG: Record<string, any> = {
   runner: {
     id: 'runner',
     title: { ru: 'CYBER RUSH 3D', en: 'CYBER RUSH 3D' },
-    desc: { 
-      ru: 'Вы — курьер будущего. Город не спит, и пицца сама себя не доставит.', 
-      en: 'You are a courier of the future. The city never sleeps, and pizza won\'t deliver itself.' 
-    },
-    objective: {
-      ru: 'Уклоняйтесь от препятствий, собирайте пиццу и не врезайтесь в автобусы!',
-      en: 'Dodge obstacles, collect pizzas, and don\'t crash into buses!'
-    },
-    controls: { type: 'keyboard', label: { ru: 'Свайп / Тап', en: 'Swipe / Tap' } }, // MOBILE OPTIMIZATION
+    desc: { ru: 'Курьер будущего. Город не спит.', en: 'Future courier.' },
+    objective: { ru: 'Уклоняйтесь от препятствий.', en: 'Dodge obstacles.' },
+    controls: { type: 'keyboard', label: { ru: 'Стрелки / Свайп', en: 'Arrows / Swipe' } },
     icon: <Gamepad2 className="w-12 h-12 text-pink-500" />,
-    color: 'border-pink-500 shadow-pink-500/20'
+    color: 'border-pink-500 shadow-pink-500/20',
+    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ
   },
   jump: {
     id: 'jump',
     title: { ru: 'PIZZA JUMP', en: 'PIZZA JUMP' },
-    desc: { 
-      ru: 'Гравитация отключена. Доставка на МКС уже в пути.', 
-      en: 'Gravity is offline. ISS delivery is on the way.' 
-    },
-    objective: {
-      ru: 'Прыгайте по платформам, используйте джетпаки и избегайте дронов.',
-      en: 'Jump on platforms, use jetpacks, and avoid drones.'
-    },
-    controls: { type: 'keyboard', label: { ru: 'Тап лево/право', en: 'Tap Left/Right' } }, // MOBILE OPTIMIZATION
+    desc: { ru: 'Гравитация отключена.', en: 'Gravity offline.' },
+    objective: { ru: 'Прыгайте по платформам.', en: 'Jump on platforms.' },
+    controls: { type: 'keyboard', label: { ru: 'Тап лево/право', en: 'Tap Left/Right' } },
     icon: <Rocket className="w-12 h-12 text-red-500" />,
-    color: 'border-red-500 shadow-red-500/20'
+    color: 'border-red-500 shadow-red-500/20',
+    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ
   },
   snake: {
     id: 'snake',
-    title: { ru: 'PIZZA SNAKE RETRO', en: 'PIZZA SNAKE RETRO' },
-    desc: { 
-      ru: 'Классика 90-х в новой неоновой обертке.', 
-      en: '90s classic wrapped in a new neon shell.' 
-    },
-    objective: {
-      ru: 'Собирайте пиццу, растите хвост и не кусайте себя!',
-      en: 'Collect pizza, grow your tail, and don\'t bite yourself!'
-    },
-    controls: { type: 'keyboard', label: { ru: 'Свайпы', en: 'Swipes' } }, // MOBILE OPTIMIZATION
+    title: { ru: 'PIZZA SNAKE', en: 'PIZZA SNAKE' },
+    desc: { ru: 'Классика.', en: 'Classic.' },
+    objective: { ru: 'Собирайте пиццу.', en: 'Collect pizza.' },
+    controls: { type: 'keyboard', label: { ru: 'Стрелки', en: 'Arrows' } },
     icon: <PlayCircle className="w-12 h-12 text-green-500" />,
-    color: 'border-green-500 shadow-green-500/20'
+    color: 'border-green-500 shadow-green-500/20',
+    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ
   },
   stacker: {
     id: 'stacker',
     title: { ru: 'PIZZA TOWER', en: 'PIZZA TOWER' },
-    desc: { 
-      ru: 'Строим самую высокую башню из коробок в истории.', 
-      en: 'Building the tallest box tower in history.' 
-    },
-    objective: {
-      ru: 'Кликайте вовремя, чтобы сложить коробки ровно. Промахи обрезают башню.',
-      en: 'Click in time to stack boxes perfectly. Misses slice the tower.'
-    },
-    controls: { type: 'mouse', label: { ru: 'Тап по экрану', en: 'Tap screen' } }, // MOBILE OPTIMIZATION
+    desc: { ru: 'Строим башню.', en: 'Build tower.' },
+    objective: { ru: 'Кликайте вовремя.', en: 'Click in time.' },
+    controls: { type: 'mouse', label: { ru: 'Клик', en: 'Click' } },
     icon: <Box className="w-12 h-12 text-yellow-500" />,
-    color: 'border-yellow-500 shadow-yellow-500/20'
+    color: 'border-yellow-500 shadow-yellow-500/20',
+    orientation: 'portrait' // ВЕРТИКАЛЬНАЯ
   },
   kitchen: {
     id: 'kitchen',
-    title: { ru: 'ШЕФ ЛЮБЛЮPIZZA', en: 'CHEF PIZZA PRO' },
-    desc: { 
-      ru: 'Симулятор кухни. Заказы идут, печь горит!', 
-      en: 'Kitchen simulator. Orders coming in, oven is hot!'
-    },
-    objective: {
-      ru: 'Готовьте по рецепту, следите за печью и режьте ровно.',
-      en: 'Cook by recipe, watch the oven, and slice evenly.'
-    },
-    controls: { type: 'mouse', label: { ru: 'Тач / Перетаскивание', en: 'Touch / Drag' } }, // MOBILE OPTIMIZATION
+    title: { ru: 'CHEF PIZZA', en: 'CHEF PIZZA' },
+    desc: { ru: 'Готовка.', en: 'Cooking.' },
+    objective: { ru: 'Выполняй заказы.', en: 'Orders.' },
+    controls: { type: 'mouse', label: { ru: 'Драг', en: 'Drag' } },
     icon: <ChefHat className="w-12 h-12 text-orange-500" />,
-    color: 'border-orange-500 shadow-orange-500/20'
+    color: 'border-orange-500 shadow-orange-500/20',
+    orientation: 'landscape' // ГОРИЗОНТАЛЬНАЯ
   },
   checkers: {
     id: 'checkers',
-    title: { ru: 'PIZZA CHECKERS', en: 'PIZZA CHECKERS' },
-    desc: { 
-      ru: 'Интеллектуальная битва за последний кусок.', 
-      en: 'Intellectual battle for the last slice.' 
-    },
-    objective: {
-      ru: 'Съешьте все грибы противника. Пепперони должны победить!',
-      en: 'Eat all opponent mushrooms. Pepperoni must win!'
-    },
-    controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } }, // MOBILE OPTIMIZATION
+    title: { ru: 'CHECKERS', en: 'CHECKERS' },
+    desc: { ru: 'Шашки.', en: 'Checkers.' },
+    objective: { ru: 'Победи.', en: 'Win.' },
+    controls: { type: 'mouse', label: { ru: 'Клик', en: 'Click' } },
     icon: <Flag className="w-12 h-12 text-blue-500" />,
-    color: 'border-blue-500 shadow-blue-500/20'
+    color: 'border-blue-500 shadow-blue-500/20',
+    orientation: 'square' // КВАДРАТНАЯ
   },
-  quiz: {
-    id: 'quiz',
-    title: { ru: 'ВИКТОРИНА', en: 'CYBER TRIVIA' },
-    desc: { ru: 'Проверь свои знания о пицце и истории.', en: 'Test your knowledge about pizza and history.' },
-    objective: { ru: 'Отвечай правильно и быстро, чтобы заработать максимум очков.', en: 'Answer correctly and quickly to earn max points.' },
-    controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } },
-    icon: <BrainCircuit className="w-12 h-12 text-purple-500" />,
-    color: 'border-purple-500 shadow-purple-500/20'
-  },
-  wheel: {
-    id: 'wheel',
-    title: { ru: 'КОЛЕСО ФОРТУНЫ', en: 'WHEEL OF FORTUNE' },
-    desc: { ru: 'Испытай удачу и выиграй призы.', en: 'Test your luck and win prizes.' },
-    objective: { ru: 'Крути колесо и получай бонусы, скидки или очки.', en: 'Spin the wheel to get bonuses, discounts or points.' },
-    controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } },
-    icon: <Disc className="w-12 h-12 text-yellow-500" />,
-    color: 'border-yellow-500 shadow-yellow-500/20'
-  },
-  puzzle: {
-    id: 'puzzle',
-    title: { ru: 'ПАЗЛЫ', en: 'PUZZLE' },
-    desc: { ru: 'Собери картинку из кусочков.', en: 'Assemble the picture from pieces.' },
-    objective: { ru: 'Меняй плитки местами, чтобы восстановить изображение.', en: 'Swap tiles to reconstruct the image.' },
-    controls: { type: 'mouse', label: { ru: 'Тап / Свап', en: 'Tap / Swap' } },
-    icon: <Puzzle className="w-12 h-12 text-blue-400" />,
-    color: 'border-blue-400 shadow-blue-400/20'
-  },
-  scratch: {
-    id: 'scratch',
-    title: { ru: 'СЧАСТЛИВАЯ КАРТА', en: 'LUCKY CARD' },
-    desc: { ru: 'Сотри слой и найди приз.', en: 'Scratch the layer and find a prize.' },
-    objective: { ru: 'Води пальцем по карте, чтобы стереть защитный слой.', en: 'Move your finger over the card to scratch off the layer.' },
-    controls: { type: 'mouse', label: { ru: 'Свайп', en: 'Swipe' } },
-    icon: <Ticket className="w-12 h-12 text-green-500" />,
-    color: 'border-green-500 shadow-green-500/20'
-  }
+  quiz: { id: 'quiz', title: { ru: 'ВИКТОРИНА', en: 'QUIZ' }, desc: { ru: '', en: '' }, objective: { ru: '', en: '' }, controls: { type: 'mouse', label: { ru: '', en: '' } }, icon: <BrainCircuit className="w-12 h-12 text-purple-500" />, color: 'border-purple-500', orientation: 'landscape' },
+  wheel: { id: 'wheel', title: { ru: 'КОЛЕСО', en: 'WHEEL' }, desc: { ru: '', en: '' }, objective: { ru: '', en: '' }, controls: { type: 'mouse', label: { ru: '', en: '' } }, icon: <Disc className="w-12 h-12 text-yellow-500" />, color: 'border-yellow-500', orientation: 'square' },
+  puzzle: { id: 'puzzle', title: { ru: 'ПАЗЛ', en: 'PUZZLE' }, desc: { ru: '', en: '' }, objective: { ru: '', en: '' }, controls: { type: 'mouse', label: { ru: '', en: '' } }, icon: <Puzzle className="w-12 h-12 text-blue-400" />, color: 'border-blue-400', orientation: 'landscape' },
+  scratch: { id: 'scratch', title: { ru: 'СКРЕТЧ', en: 'SCRATCH' }, desc: { ru: '', en: '' }, objective: { ru: '', en: '' }, controls: { type: 'mouse', label: { ru: '', en: '' } }, icon: <Ticket className="w-12 h-12 text-green-500" />, color: 'border-green-500', orientation: 'portrait' },
 };
 
-const GameIntroCard = ({ config, language, onPlay }: { config: any, language: Language, onPlay: () => void }) => {
-  return (
-    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300 p-4">
-        <div className={`relative w-full max-w-2xl bg-gray-900 border-4 ${config.color} rounded-[2rem] p-6 md:p-12 text-center shadow-2xl overflow-hidden flex flex-col items-center z-20 max-h-full overflow-y-auto custom-scrollbar`}>
-            
-            {/* Background Animation */}
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-10 pointer-events-none"></div>
-            <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] ${config.color.replace('border', 'bg').replace('500', '500/20')} blur-[80px] rounded-full pointer-events-none`}></div>
-
-            <div className="relative z-10 flex flex-col items-center w-full pointer-events-auto">
-                <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full bg-gray-800 border-2 ${config.color} flex items-center justify-center mb-6 shadow-lg animate-[float_3s_ease-in-out_infinite] shrink-0`}>
-                    {config.icon}
-                </div>
-
-                <h2 className="text-3xl md:text-5xl font-black text-white italic tracking-tighter mb-4 drop-shadow-lg">
-                    {config.title[language]}
-                </h2>
-
-                <p className="text-gray-400 text-sm md:text-lg mb-8 font-mono max-w-lg leading-relaxed">
-                    {config.desc[language]}
-                </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 w-full mb-10">
-                    <div className="bg-gray-800/50 p-4 rounded-xl border border-white/5">
-                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
-                        <Info className="w-4 h-4" /> {language === 'ru' ? 'ЦЕЛЬ' : 'GOAL'}
-                        </div>
-                        <p className="text-white text-sm font-bold">
-                            {config.objective[language]}
-                        </p>
-                    </div>
-                    <div className="bg-gray-800/50 p-4 rounded-xl border border-white/5">
-                        <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2 flex items-center justify-center gap-2">
-                        {config.controls.type === 'keyboard' ? <Hand className="w-4 h-4" /> : <MousePointer className="w-4 h-4" />}
-                        {language === 'ru' ? 'УПРАВЛЕНИЕ' : 'CONTROLS'}
-                        </div>
-                        <p className="text-white text-sm font-bold">
-                            {config.controls.label[language]}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="relative z-50 w-full md:w-auto">
-                    <button 
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onPlay();
-                        }}
-                        className={`w-full md:w-auto px-12 py-4 bg-white text-black font-black text-xl rounded-full shadow-[0_0_30px_rgba(255,255,255,0.3)] hover:scale-105 hover:bg-gray-200 transition-all flex items-center justify-center gap-3 cursor-pointer`}
-                    >
-                        <PlayCircle className="w-6 h-6 fill-current" />
-                        {language === 'ru' ? 'ИГРАТЬ' : 'PLAY NOW'}
-                    </button>
-                </div>
-            </div>
-
-        </div>
+const GameIntroCard = ({ config, language, onPlay }: { config: any; language: Language; onPlay: () => void }) => (
+  <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+    <div className={`relative w-full max-w-md bg-gray-900 border-2 ${config.color} rounded-3xl p-8 text-center shadow-2xl flex flex-col items-center`}>
+      <div className={`w-20 h-20 rounded-full bg-gray-800 border-2 ${config.color} flex items-center justify-center mb-6 shadow-lg shrink-0`}>
+        {config.icon}
+      </div>
+      <h2 className="text-3xl font-black text-white italic tracking-tighter mb-4">{config.title[language]}</h2>
+      <button onClick={(e) => { e.stopPropagation(); onPlay(); }} className="w-full py-4 bg-white text-black font-black text-xl rounded-xl hover:scale-105 transition-transform flex items-center justify-center gap-2">
+        <PlayCircle className="w-6 h-6 fill-current" /> {language === 'ru' ? 'ИГРАТЬ' : 'PLAY'}
+      </button>
     </div>
-  );
-}
+  </div>
+);
 
 const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatus }) => {
   const [selectedGame, setSelectedGame] = useState<GameType>('runner');
   const [showIntro, setShowIntro] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  // 1. Detect Mobile Device
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 768px)').matches);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const { isMobile } = useResponsiveGameViewport();
 
   const handleSelectGame = (game: GameType) => {
-      if (selectedGame !== game) {
-          setSelectedGame(game);
-          setShowIntro(true);
-      }
+    if (selectedGame !== game) {
+      setSelectedGame(game);
+      setShowIntro(true);
+    }
   };
 
-  const handleGameOver = (score: number) => {
-    onScoreUpdate(score);
-  };
-
-  const t = {
-    title: language === 'ru' ? 'ИГРОВАЯ ЗОНА' : 'GAME ZONE',
-    desc: language === 'ru' ? 'Играй, чтобы заработать скидки!' : 'Play to earn discounts!',
-  };
-
+  const handleGameOver = (score: number) => onScoreUpdate(score);
   const isGameEnabled = gamesStatus ? gamesStatus[selectedGame] : true;
   const isPlaying = !showIntro && isGameEnabled;
-  
-  // Fullscreen is only active when playing AND on mobile
-  const fullscreenActive = isPlaying && isMobile;
+  const config = GAMES_CONFIG[selectedGame];
+  const selectorButtons = useMemo(() => Object.entries(GAMES_CONFIG), []);
 
-  // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
-  useEffect(() => {
-    if (fullscreenActive) {
-      // Disable scroll and gestures for mobile fullscreen
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overscrollBehavior = 'none';
-      
-      const preventDefault = (e: TouchEvent) => {
-          // Allow multi-touch gestures if needed for game, but prevent browser nav
-          if (e.touches.length > 1) return; 
-          e.preventDefault();
-      };
+  // --- ЖЕСТКИЙ CSS РАСЧЕТ РАЗМЕРОВ ---
+  const containerStyle: React.CSSProperties = useMemo(() => {
+    if (isMobile) return { width: '100%', height: '100%', maxHeight: '80vh', borderRadius: '24px' };
 
-      // Aggressive listener to prevent scroll/swipe nav on mobile
-      window.addEventListener('touchmove', preventDefault, { passive: false });
+    const orientation = config.orientation || 'landscape';
 
-      return () => {
-        document.body.style.overflow = '';
-        document.documentElement.style.overscrollBehavior = '';
-        window.removeEventListener('touchmove', preventDefault);
-      };
+    const baseStyle: React.CSSProperties = {
+      transition: 'all 0.3s ease',
+      margin: '0 auto',
+      position: 'relative',
+      overflow: 'hidden',
+      backgroundColor: 'black',
+      border: '4px solid #1f2937',
+      borderRadius: '24px',
+      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+    };
+
+    if (orientation === 'portrait') {
+      return { ...baseStyle, width: '100%', maxWidth: '420px', aspectRatio: '9/16', height: 'auto', maxHeight: '800px' };
     }
-  }, [fullscreenActive]);
+    if (orientation === 'square') {
+      return { ...baseStyle, width: '100%', maxWidth: '600px', aspectRatio: '1/1', height: 'auto', maxHeight: '800px' };
+    }
+    return { ...baseStyle, width: '100%', height: '100%', minHeight: '600px' };
+  }, [isMobile, config]);
 
   return (
-    <div className="flex flex-col gap-8">
-      
-      {/* Header Section */}
-      <div className="flex justify-between items-end border-b border-gray-700 pb-4">
-        <div>
-           <h2 className="text-3xl md:text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-yellow-500">
-             {t.title}
-           </h2>
-           <p className="text-gray-400 mt-2 flex items-center gap-2">
-             <Gamepad2 className="w-4 h-4" /> {t.desc}
-           </p>
+    <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-8 min-h-[80vh]">
+      <div className="flex flex-col h-full">
+        <div className="flex justify-between items-end border-b border-gray-700 pb-4 mb-6">
+          <div>
+            <h2 className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-yellow-500">
+              {language === 'ru' ? 'ИГРОВАЯ ЗОНА' : 'GAME ZONE'}
+            </h2>
+            <p className="text-gray-400 mt-1 flex items-center gap-2 text-sm">
+              <Gamepad2 className="w-4 h-4" /> {config.title[language]}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center bg-gray-950/50 rounded-[3rem] border border-gray-800 p-4 lg:p-8 shadow-inner w-full min-h-[500px]">
+          <div style={containerStyle}>
+            {!isGameEnabled && <DisabledGameScreen title={config.title[language]} language={language} />}
+
+            {isPlaying && (
+              <>
+                <button onClick={() => setShowIntro(true)} className="absolute top-4 right-4 z-50 p-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-red-500/80 transition-colors border border-white/20">
+                  <X className="w-6 h-6" />
+                </button>
+
+                {selectedGame === 'runner' && <PizzaRunner onGameOver={handleGameOver} language={language} isActive autoStart />}
+                {selectedGame === 'jump' && <PizzaJump onGameOver={handleGameOver} language={language} autoStart />}
+                {selectedGame === 'snake' && <PizzaSnake onGameOver={handleGameOver} language={language} autoStart />}
+                {selectedGame === 'stacker' && <PizzaStacker onGameOver={handleGameOver} language={language} autoStart />}
+                {selectedGame === 'kitchen' && <PizzaKitchen onGameOver={handleGameOver} language={language} autoStart />}
+                {selectedGame === 'checkers' && <PizzaCheckers onGameOver={handleGameOver} language={language} autoStart />}
+                {selectedGame === 'quiz' && <QuizGame onComplete={handleGameOver} language={language} />}
+                {selectedGame === 'wheel' && <WheelFortune onWin={(p, v) => handleGameOver(v > 0 ? v : 0)} language={language} />}
+                {selectedGame === 'puzzle' && <PuzzleGame onComplete={handleGameOver} language={language} />}
+                {selectedGame === 'scratch' && <ScratchGame onWin={(p) => handleGameOver(0)} language={language} />}
+              </>
+            )}
+
+            {showIntro && isGameEnabled && <GameIntroCard config={config} language={language} onPlay={() => setShowIntro(false)} />}
+          </div>
         </div>
       </div>
 
-      {/* Game Selector */}
-      <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x touch-pan-x">
-         {Object.entries(GAMES_CONFIG).map(([key, config]) => (
-             <button 
-               key={key}
-               onClick={() => handleSelectGame(key as GameType)}
-               className={`snap-start flex-none w-[200px] p-4 rounded-xl border-2 transition-all flex items-center gap-4 group ${selectedGame === key ? 'border-pink-500 bg-pink-500/10' : 'border-gray-700 bg-gray-800 hover:border-gray-500'}`}
-             >
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-2xl shrink-0 ${selectedGame === key ? 'bg-pink-500 text-white' : 'bg-gray-700'}`}>
-                    {config.icon}
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-8 h-fit">
+        <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-4 shadow-xl">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-pink-400 font-bold mb-4">
+            <Grid3X3 className="w-4 h-4" /> {language === 'ru' ? 'БИБЛИОТЕКА' : 'LIBRARY'}
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
+            {selectorButtons.map(([key, cfg]) => (
+              <button
+                key={key}
+                onClick={() => handleSelectGame(key as GameType)}
+                className={`
+                    flex items-center gap-3 p-3 rounded-xl border transition-all text-left group
+                    ${selectedGame === key
+                      ? 'bg-gray-800 border-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.3)]'
+                      : 'bg-transparent border-gray-800 hover:bg-gray-800 hover:border-gray-600'}
+                `}
+              >
+                <div className={`p-2 rounded-lg ${selectedGame === key ? 'bg-pink-500 text-white' : 'bg-gray-700 text-gray-400 group-hover:text-white'}`}>
+                  {React.cloneElement(cfg.icon, { className: 'w-5 h-5' })}
                 </div>
-                <div className="text-left overflow-hidden">
-                    <div className={`font-black italic truncate ${selectedGame === key ? 'text-white' : 'text-gray-400'}`}>{config.title.en}</div>
-                    <div className="text-xs text-gray-500">{key === 'quiz' || key === 'wheel' ? 'Bonus' : 'Arcade'}</div>
+                <div className="min-w-0 hidden md:block">
+                  <div className={`text-xs font-bold truncate ${selectedGame === key ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                    {cfg.title[language]}
+                  </div>
                 </div>
-             </button>
-         ))}
-      </div>
-
-      {/* 3. Dual Mode Container Logic */}
-      <div 
-        className={
-            fullscreenActive
-            ? "fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center" // Mobile Fullscreen
-            : "relative w-full h-[80vh] max-h-[650px] rounded-3xl border border-gray-800 bg-black z-10" // Desktop Card
-        }
-      >
-         {/* Content Wrapper / Stage */}
-         <div 
-            className={`
-                relative overflow-hidden touch-none select-none w-full h-full
-                ${fullscreenActive ? 'max-w-[520px] max-h-[calc(100dvh-80px)] mx-auto rounded-xl border border-gray-800/50' : ''} 
-            `}
-            style={{ 
-                paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0, 
-                paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0 
-            }}
-         >
-             {!isGameEnabled && (
-                 <DisabledGameScreen title={GAMES_CONFIG[selectedGame].title[language]} language={language} />
-             )}
-
-             {/* Active Game */}
-             {isPlaying && (
-                 <>
-                    {/* Close Button - Always Visible */}
-                    <button 
-                        onClick={() => setShowIntro(true)}
-                        className="absolute top-4 right-4 z-50 p-2 bg-white/10 backdrop-blur-md rounded-full text-white hover:bg-red-500/80 transition-colors border border-white/20"
-                        style={{ marginTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0 }}
-                    >
-                        <X className="w-6 h-6" />
-                    </button>
-
-                    {selectedGame === 'runner' && <PizzaRunner onGameOver={handleGameOver} language={language} isActive={true} autoStart={true} />}
-                    {selectedGame === 'jump' && <PizzaJump onGameOver={handleGameOver} language={language} autoStart={true} />}
-                    {selectedGame === 'snake' && <PizzaSnake onGameOver={handleGameOver} language={language} autoStart={true} />}
-                    {selectedGame === 'stacker' && <PizzaStacker onGameOver={handleGameOver} language={language} autoStart={true} />}
-                    {selectedGame === 'kitchen' && <PizzaKitchen onGameOver={handleGameOver} language={language} autoStart={true} />}
-                    {selectedGame === 'checkers' && <PizzaCheckers onGameOver={handleGameOver} language={language} autoStart={true} />}
-                    
-                    {selectedGame === 'quiz' && <QuizGame onComplete={handleGameOver} language={language} />}
-                    {selectedGame === 'wheel' && <WheelFortune onWin={(p, v) => handleGameOver(v > 0 ? v : 0)} language={language} />}
-                    {selectedGame === 'puzzle' && <PuzzleGame onComplete={handleGameOver} language={language} />}
-                    {selectedGame === 'scratch' && <ScratchGame onWin={(p) => handleGameOver(0)} language={language} />}
-                 </>
-             )}
-
-             {/* INTRO OVERLAY */}
-             {showIntro && isGameEnabled && (
-                 <GameIntroCard 
-                    config={GAMES_CONFIG[selectedGame]} 
-                    language={language} 
-                    onPlay={() => setShowIntro(false)} 
-                 />
-             )}
-         </div>
-      </div>
-
-      {/* Footer */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-xs text-gray-600 uppercase tracking-widest font-mono">
-         <div className="bg-gray-900/50 p-4 rounded border border-gray-800">
-            Status: {isGameEnabled ? 'Online' : 'Maintenance'}
-         </div>
-         <div className="bg-gray-900/50 p-4 rounded border border-gray-800">
-            Server: Kursk-1
-         </div>
-         <div className="bg-gray-900/50 p-4 rounded border border-gray-800">
-            Ping: 12ms
-         </div>
-      </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </aside>
     </div>
   );
 };
