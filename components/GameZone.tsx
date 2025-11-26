@@ -300,17 +300,20 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     height: cappedStageHeight,
     maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : `min(${cappedStageHeight}px, ${heightCeiling}px)`,
     maxWidth: fullscreenActive ? '100%' : stageMaxWidth,
-    width: '100%',
+    width: fullscreenActive ? '100%' : stageMaxWidth,
+    display: 'flex',
+    justifyContent: 'center',
     marginInline: 'auto',
-    overflow: 'hidden'
+    overflow: 'hidden',
+    boxSizing: 'border-box' as const,
   }), [cappedStageHeight, fullscreenActive, heightCeiling, stageMaxWidth]);
 
     const stageFrameStyle = useMemo(() => ({
       paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
       paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
       touchAction: fullscreenActive ? 'none' : 'manipulation',
-      maxWidth: stageMaxWidth,
-      width: '100%',
+      maxWidth: fullscreenActive ? '100%' : stageMaxWidth,
+      width: fullscreenActive ? '100%' : stageMaxWidth,
       height: cappedStageHeight,
       marginInline: 'auto',
       borderRadius: fullscreenActive ? '18px' : undefined,
