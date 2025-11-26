@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Text, Stars, Trail, RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { Language } from '../types';
@@ -20,11 +19,33 @@ interface PizzaRunnerProps {
   autoStart?: boolean;
 }
 
-// --- SHARED ASSETS ---
+// --- MODELS ---
 const boxGeo = new THREE.BoxGeometry(1, 1, 1);
 const cylinderGeo = new THREE.CylinderGeometry(1, 1, 1, 16);
 const planeGeo = new THREE.PlaneGeometry(1, 1);
 const coneGeo = new THREE.ConeGeometry(1, 1, 1, 16);
+
+// --- АДАПТИВНАЯ КАМЕРА (ВАЖНОЕ ДОБАВЛЕНИЕ) ---
+const ResponsiveCamera = () => {
+    const { camera, viewport } = useThree();
+    
+    useFrame(() => {
+        // Если соотношение сторон узкое (портрет), отодвигаем камеру
+        const targetDist = 7;
+        let zPos = targetDist;
+        
+        // viewport.aspect < 1 означает вертикальный экран (мобилка или наш узкий контейнер на ПК)
+        if (viewport.aspect < 1) {
+             zPos = targetDist / (viewport.aspect * 0.75); 
+        }
+        
+        camera.position.z = THREE.MathUtils.lerp(camera.position.z, zPos, 0.1);
+        camera.position.y = 3 + (zPos - targetDist) * 0.3; 
+        camera.lookAt(0, 0, 0);
+    });
+    
+    return null;
+};
 
 // --- UTILS ---
 const HeartShape = () => {
@@ -43,7 +64,6 @@ const HeartShape = () => {
   return shape;
 };
 
-// --- 3D COMPONENTS (Memoized) ---
 const BrandedBackpack = React.memo(() => {
   const shape = HeartShape();
   const bagMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#fbbf24", roughness: 0.2 }), []);
@@ -374,6 +394,7 @@ const PizzaRunner: React.FC<PizzaRunnerProps> = ({ onGameOver, language, isActiv
         onTouchEnd={handleTouchEnd}
     >
         <Canvas shadows camera={{ position: [0, 3, 6], fov: 60 }} dpr={[1, 1.5]} gl={{ powerPreference: "high-performance" }}>
+            <ResponsiveCamera />
             <DynamicAtmosphere score={score} />
             <ambientLight intensity={0.5} />
             <directionalLight position={[10, 20, 5]} intensity={1.5} castShadow shadow-bias={-0.0001} />
