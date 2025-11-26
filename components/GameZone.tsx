@@ -38,7 +38,8 @@ const GAMES_CONFIG: Record<string, any> = {
     },
     controls: { type: 'keyboard', label: { ru: 'Свайп / Тап', en: 'Swipe / Tap' } }, // MOBILE OPTIMIZATION
     icon: <Gamepad2 className="w-12 h-12 text-pink-500" />,
-    color: 'border-pink-500 shadow-pink-500/20'
+    color: 'border-pink-500 shadow-pink-500/20',
+    orientation: 'portrait'
   },
   jump: {
     id: 'jump',
@@ -53,7 +54,8 @@ const GAMES_CONFIG: Record<string, any> = {
     },
     controls: { type: 'keyboard', label: { ru: 'Тап лево/право', en: 'Tap Left/Right' } }, // MOBILE OPTIMIZATION
     icon: <Rocket className="w-12 h-12 text-red-500" />,
-    color: 'border-red-500 shadow-red-500/20'
+    color: 'border-red-500 shadow-red-500/20',
+    orientation: 'portrait'
   },
   snake: {
     id: 'snake',
@@ -68,7 +70,8 @@ const GAMES_CONFIG: Record<string, any> = {
     },
     controls: { type: 'keyboard', label: { ru: 'Свайпы', en: 'Swipes' } }, // MOBILE OPTIMIZATION
     icon: <PlayCircle className="w-12 h-12 text-green-500" />,
-    color: 'border-green-500 shadow-green-500/20'
+    color: 'border-green-500 shadow-green-500/20',
+    orientation: 'portrait'
   },
   stacker: {
     id: 'stacker',
@@ -83,7 +86,8 @@ const GAMES_CONFIG: Record<string, any> = {
     },
     controls: { type: 'mouse', label: { ru: 'Тап по экрану', en: 'Tap screen' } }, // MOBILE OPTIMIZATION
     icon: <Box className="w-12 h-12 text-yellow-500" />,
-    color: 'border-yellow-500 shadow-yellow-500/20'
+    color: 'border-yellow-500 shadow-yellow-500/20',
+    orientation: 'portrait'
   },
   kitchen: {
     id: 'kitchen',
@@ -98,7 +102,8 @@ const GAMES_CONFIG: Record<string, any> = {
     },
     controls: { type: 'mouse', label: { ru: 'Тач / Перетаскивание', en: 'Touch / Drag' } }, // MOBILE OPTIMIZATION
     icon: <ChefHat className="w-12 h-12 text-orange-500" />,
-    color: 'border-orange-500 shadow-orange-500/20'
+    color: 'border-orange-500 shadow-orange-500/20',
+    orientation: 'landscape'
   },
   checkers: {
     id: 'checkers',
@@ -113,7 +118,8 @@ const GAMES_CONFIG: Record<string, any> = {
     },
     controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } }, // MOBILE OPTIMIZATION
     icon: <Flag className="w-12 h-12 text-blue-500" />,
-    color: 'border-blue-500 shadow-blue-500/20'
+    color: 'border-blue-500 shadow-blue-500/20',
+    orientation: 'square'
   },
   quiz: {
     id: 'quiz',
@@ -122,7 +128,8 @@ const GAMES_CONFIG: Record<string, any> = {
     objective: { ru: 'Отвечай правильно и быстро, чтобы заработать максимум очков.', en: 'Answer correctly and quickly to earn max points.' },
     controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } },
     icon: <BrainCircuit className="w-12 h-12 text-purple-500" />,
-    color: 'border-purple-500 shadow-purple-500/20'
+    color: 'border-purple-500 shadow-purple-500/20',
+    orientation: 'landscape'
   },
   wheel: {
     id: 'wheel',
@@ -131,7 +138,8 @@ const GAMES_CONFIG: Record<string, any> = {
     objective: { ru: 'Крути колесо и получай бонусы, скидки или очки.', en: 'Spin the wheel to get bonuses, discounts or points.' },
     controls: { type: 'mouse', label: { ru: 'Тап', en: 'Tap' } },
     icon: <Disc className="w-12 h-12 text-yellow-500" />,
-    color: 'border-yellow-500 shadow-yellow-500/20'
+    color: 'border-yellow-500 shadow-yellow-500/20',
+    orientation: 'square'
   },
   puzzle: {
     id: 'puzzle',
@@ -140,7 +148,8 @@ const GAMES_CONFIG: Record<string, any> = {
     objective: { ru: 'Меняй плитки местами, чтобы восстановить изображение.', en: 'Swap tiles to reconstruct the image.' },
     controls: { type: 'mouse', label: { ru: 'Тап / Свап', en: 'Tap / Swap' } },
     icon: <Puzzle className="w-12 h-12 text-blue-400" />,
-    color: 'border-blue-400 shadow-blue-400/20'
+    color: 'border-blue-400 shadow-blue-400/20',
+    orientation: 'landscape'
   },
   scratch: {
     id: 'scratch',
@@ -149,7 +158,8 @@ const GAMES_CONFIG: Record<string, any> = {
     objective: { ru: 'Води пальцем по карте, чтобы стереть защитный слой.', en: 'Move your finger over the card to scratch off the layer.' },
     controls: { type: 'mouse', label: { ru: 'Свайп', en: 'Swipe' } },
     icon: <Ticket className="w-12 h-12 text-green-500" />,
-    color: 'border-green-500 shadow-green-500/20'
+    color: 'border-green-500 shadow-green-500/20',
+    orientation: 'portrait'
   }
 };
 
@@ -219,7 +229,7 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   const [showIntro, setShowIntro] = useState(true);
   const viewportOptions = useMemo(() => ({
     fillHeight: showIntro ? 0.9 : 0.96,
-    fillWidth: showIntro ? 0.82 : 0.9,
+    fillWidth: showIntro ? 0.78 : 0.86,
     breakpoints: {
       mobile: {
         reservedTop: 210,
@@ -240,8 +250,8 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
         reservedBottom: 120,
         minHeight: 720,
         minWidth: 840,
-        fillHeight: showIntro ? 0.9 : 0.94,
-        fillWidth: showIntro ? 0.88 : 0.92,
+        fillHeight: showIntro ? 0.88 : 0.92,
+        fillWidth: showIntro ? 0.82 : 0.86,
         horizontalPadding: 40,
       },
     },
@@ -283,30 +293,60 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   );
 
   const cappedStageWidth = useMemo(
-    () => Math.min(stageWidth, viewport.width - (isMobile ? 16 : isTablet ? 32 : 80)),
+    () => Math.min(stageWidth, viewport.width - (isMobile ? 16 : isTablet ? 32 : 64)),
     [stageWidth, viewport.width, isMobile, isTablet]
   );
 
-  const stageMaxWidth = useMemo(
-    () => {
-      const gutter = isMobile ? 12 : isTablet ? 28 : 96;
-      const available = Math.max(viewport.width - gutter * 2, 320);
-      const desktopHardCap = isDesktop ? 1100 : Infinity;
-      const viewportClamp = isDesktop ? viewport.width * 0.9 : viewport.width;
-      return Math.min(cappedStageWidth, available, desktopHardCap, viewportClamp);
-    },
-    [cappedStageWidth, isDesktop, isMobile, isTablet, viewport.width]
-  );
+  const orientation: 'portrait' | 'square' | 'landscape' = useMemo(() => {
+    const config = GAMES_CONFIG[selectedGame];
+    return (config?.orientation as any) || 'landscape';
+  }, [selectedGame]);
 
-  const stageContentWidth = useMemo(
-    () => Math.min(stageMaxWidth, cappedStageWidth),
-    [cappedStageWidth, stageMaxWidth]
-  );
+  const baseFrameWidth = useMemo(() => {
+    const gutter = isDesktop ? 72 : isTablet ? 32 : 16;
+    const hardCap = isDesktop ? 1080 : isTablet ? 860 : viewport.width;
+    const fitWidth = Math.max(viewport.width - gutter * 2, 320);
+    return Math.max(320, Math.min(cappedStageWidth, fitWidth, hardCap));
+  }, [cappedStageWidth, isDesktop, isTablet, viewport.width]);
+
+  const baseFrameHeight = useMemo(() => {
+    const ceiling = isDesktop ? viewport.height - 140 : viewport.height - 48;
+    return Math.min(cappedStageHeight, Math.max(ceiling, 320));
+  }, [cappedStageHeight, isDesktop, viewport.height]);
+
+  const { frameWidth, frameHeight } = useMemo(() => {
+    if (fullscreenActive || isMobile) {
+      const safeWidth = Math.min(baseFrameWidth, viewport.width - 12);
+      const safeHeight = Math.min(baseFrameHeight, viewport.height - 12);
+      return { frameWidth: safeWidth, frameHeight: safeHeight };
+    }
+
+    const aspect = orientation === 'portrait' ? 9 / 16 : orientation === 'square' ? 1 : 16 / 9;
+    const maxWidthByOrientation = orientation === 'portrait'
+      ? (isDesktop ? 520 : isTablet ? 520 : baseFrameWidth)
+      : orientation === 'square'
+        ? (isDesktop ? 720 : isTablet ? 640 : baseFrameWidth)
+        : (isDesktop ? 980 : isTablet ? 860 : baseFrameWidth);
+
+    let width = Math.min(baseFrameWidth, viewport.width - (isDesktop ? 160 : isTablet ? 96 : 32), maxWidthByOrientation);
+    let height = Math.min(baseFrameHeight, viewport.height - 120);
+
+    if (width / height > aspect) {
+      width = height * aspect;
+    } else {
+      height = width / aspect;
+    }
+
+    width = Math.max(320, width);
+    height = Math.max(320, height);
+
+    return { frameWidth: width, frameHeight: height };
+  }, [baseFrameHeight, baseFrameWidth, fullscreenActive, isDesktop, isMobile, isTablet, orientation, viewport.height, viewport.width]);
 
   const stageContainerStyle = useMemo(() => ({
-    height: cappedStageHeight,
-    maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : `min(${cappedStageHeight}px, ${heightCeiling}px)`,
-    maxWidth: fullscreenActive ? '100%' : stageMaxWidth,
+    height: frameHeight,
+    maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : frameHeight,
+    maxWidth: fullscreenActive ? '100%' : frameWidth,
     width: '100%',
     display: 'flex',
     justifyContent: 'center',
@@ -315,20 +355,20 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
     paddingInline: isDesktop ? 16 : 8,
     overflow: 'hidden',
     boxSizing: 'border-box' as const,
-  }), [cappedStageHeight, fullscreenActive, heightCeiling, isDesktop, stageMaxWidth]);
+  }), [frameHeight, frameWidth, fullscreenActive, isDesktop]);
 
   const stageFrameStyle = useMemo(() => ({
     paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
     paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
     touchAction: fullscreenActive ? 'none' : 'manipulation',
-    maxWidth: stageContentWidth,
-    width: '100%',
-    height: cappedStageHeight,
+    maxWidth: frameWidth,
+    width: frameWidth,
+    height: frameHeight,
     marginInline: 'auto',
     borderRadius: fullscreenActive ? '18px' : undefined,
     overflow: 'hidden',
-    boxSizing: 'border-box' as const
-  }), [cappedStageHeight, fullscreenActive, stageContentWidth]);
+    boxSizing: 'border-box' as const,
+  }), [frameHeight, frameWidth, fullscreenActive]);
 
   // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
   useEffect(() => {
