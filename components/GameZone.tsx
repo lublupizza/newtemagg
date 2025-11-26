@@ -119,27 +119,77 @@ const GameZone: React.FC<GameZoneProps> = ({ onScoreUpdate, language, gamesStatu
   const handleGameOver = (score: number) => onScoreUpdate(score);
   const isGameEnabled = gamesStatus ? gamesStatus[selectedGame] : true;
   const isPlaying = !showIntro && isGameEnabled;
-  const config = GAMES_CONFIG[selectedGame];
 
-  // --- ЖЕСТКИЙ CSS РАСЧЕТ РАЗМЕРОВ ---
-  const containerStyle: React.CSSProperties = useMemo(() => {
-    if (isMobile) return { width: '100%', height: '100%', maxHeight: '80vh', borderRadius: '24px' };
+  // Fullscreen is only active when playing AND on mobile
+  const fullscreenActive = isPlaying && isMobile;
 
-    const orientation = config.orientation || 'landscape';
+  const heightCeiling = useMemo(
+    () => Math.max(viewport.height - (isMobile ? 24 : 96), 320),
+    [viewport.height, isMobile]
+  );
 
-    const baseStyle: React.CSSProperties = {
-      transition: 'all 0.3s ease',
-      margin: '0 auto',
-      position: 'relative',
+  const cappedStageHeight = useMemo(
+    () => Math.min(stageHeight, heightCeiling),
+    [stageHeight, heightCeiling]
+  );
+
+  const cappedStageWidth = useMemo(
+    () => Math.min(stageWidth, viewport.width - (isMobile ? 16 : isTablet ? 32 : 80)),
+    [stageWidth, viewport.width, isMobile, isTablet]
+  );
+
+  const stageMaxWidth = useMemo(
+    () => {
+      const gutter = isMobile ? 12 : isTablet ? 28 : 96;
+      const available = Math.max(viewport.width - gutter, 320);
+      return Math.min(cappedStageWidth, available);
+    },
+    [cappedStageWidth, isMobile, isTablet, viewport.width]
+  );
+
+  const stageContainerStyle = useMemo(() => ({
+    height: cappedStageHeight,
+    maxHeight: fullscreenActive ? 'calc(100dvh - 12px)' : `min(${cappedStageHeight}px, ${heightCeiling}px)`,
+    maxWidth: fullscreenActive ? '100%' : stageMaxWidth,
+    width: '100%',
+    marginInline: 'auto',
+    overflow: 'hidden'
+  }), [cappedStageHeight, fullscreenActive, heightCeiling, stageMaxWidth]);
+
+    const stageFrameStyle = useMemo(() => ({
+      paddingTop: fullscreenActive ? 'env(safe-area-inset-top)' : 0,
+      paddingBottom: fullscreenActive ? 'env(safe-area-inset-bottom)' : 0,
+      touchAction: fullscreenActive ? 'none' : 'manipulation',
+      maxWidth: stageMaxWidth,
+      width: '100%',
+      height: cappedStageHeight,
+      marginInline: 'auto',
+      borderRadius: fullscreenActive ? '18px' : undefined,
       overflow: 'hidden',
-      backgroundColor: 'black',
-      border: '4px solid #1f2937',
-      borderRadius: '24px',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-    };
+      boxSizing: 'border-box' as const
+    }), [cappedStageHeight, fullscreenActive, stageMaxWidth]);
 
-    if (orientation === 'portrait') {
-      return { ...baseStyle, width: '100%', maxWidth: '420px', aspectRatio: '9/16', height: 'auto', maxHeight: '800px' };
+  // 2. Lock Scroll & Gestures ONLY in Fullscreen Mode
+  useEffect(() => {
+    if (fullscreenActive) {
+      // Disable scroll and gestures for mobile fullscreen
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overscrollBehavior = 'none';
+      
+      const preventDefault = (e: TouchEvent) => {
+          // Allow multi-touch gestures if needed for game, but prevent browser nav
+          if (e.touches.length > 1) return; 
+          e.preventDefault();
+      };
+
+      // Aggressive listener to prevent scroll/swipe nav on mobile
+      window.addEventListener('touchmove', preventDefault, { passive: false });
+
+      return () => {
+        document.body.style.overflow = '';
+        document.documentElement.style.overscrollBehavior = '';
+        window.removeEventListener('touchmove', preventDefault);
+      };
     }
     if (orientation === 'square') {
       return { ...baseStyle, width: '100%', maxWidth: '600px', aspectRatio: '1/1', height: 'auto', maxHeight: '800px' };
