@@ -12,6 +12,7 @@ import WheelFortune from './WheelFortune';
 import PuzzleGame from './PuzzleGame';
 import ScratchGame from './ScratchGame';
 import DisabledGameScreen from './DisabledGameScreen';
+import { useResponsiveGameViewport } from '../hooks/useResponsiveGameViewport';
 
 interface GameZoneProps {
   onScoreUpdate: (points: number) => void;
